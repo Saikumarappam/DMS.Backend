@@ -1,0 +1,2 @@
+-- Deprecated: use database/05_ApisAlignedSpAndTables.sql instead.
+-- That script creates EventDetails + INSEventDetails (Apis-aligned) and additional SPs.
