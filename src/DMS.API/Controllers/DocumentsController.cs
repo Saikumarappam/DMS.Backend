@@ -58,12 +58,5 @@ public class DocumentsController : ApiControllerBase
     }
 
     [HttpGet("{id}/download")]
-    public async Task<IActionResult> Download(long id)
-    {
-        var result = await _documentService.DownloadAsync(id);
-        if (result.Error != null)
-            return Ok(result.Error);
-
-        return File(result.Stream!, result.ContentType!, result.FileName);
-    }
+    public Task<Response> Download(long id) => _documentService.DownloadAsync(id);
 }

@@ -8,6 +8,7 @@ public interface IUserRepository
     Task<DataSet> GetAllDataSetAsync(string? status, string? search);
     Task<DataSet> GetByIdDataSetAsync(long userId);
     Task<DataSet> GetByUsernameDataSetAsync(string username);
+    Task<DataSet> GetByPanDataSetAsync(string panNumber);
     Task<DataSet> GetByEmailDataSetAsync(string email);
     Task<DataSet> LoginDataSetAsync(string username, bool isPasswordValid, int maxAttempts = 5, int lockoutMinutes = 30);
 
@@ -27,6 +28,8 @@ public interface IUserRepository
     Task<DataSet> ChangePasswordDataSetAsync(long userId, string newHash, string originalPassword, long modifiedBy);
 
     Task<User?> GetByUsernameAsync(string username);
+    Task<(User? User, string? NotFoundMessage)> GetByUsernameOrMessageAsync(string username);
+    Task<User?> GetByPanAsync(string panNumber);
     Task<User?> GetByIdAsync(long userId);
     Task<User?> GetByEmailAsync(string email);
 }
@@ -48,7 +51,7 @@ public interface IDocumentRepository
 
     Task<DataSet> UploadDataSetAsync(
         long clientId, int categoryId, string categoryName, string fileName, string originalName,
-        string filePath, string extension, long fileSize, string source, long createdBy);
+        string filePath, string extension, long fileSize, string source, long createdBy, string? fileBase64 = null);
 
     Task<FileDetail?> GetByIdAsync(long fileId);
 }
@@ -123,8 +126,9 @@ public interface ITokenService
 
 public interface IFileStorageService
 {
-    Task<(string storedName, string filePath)> SaveFileAsync(Stream stream, string originalName, long clientId);
-    Task<(Stream stream, string contentType)> GetFileAsync(string filePath);
+    Task<(string storedName, string filePath)> SaveFileAsync(byte[] content, string originalName, long clientId);
+    Task<(Stream stream, string contentType)?> TryGetFileAsync(string filePath);
+    string GetContentType(string extension);
     bool IsAllowedExtension(string extension);
     bool IsAllowedSize(long size);
 }

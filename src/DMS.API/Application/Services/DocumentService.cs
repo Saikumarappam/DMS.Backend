@@ -3,6 +3,8 @@ using DMS.API.Helpers;
 using DMS.Application.DTOs.Common;
 using DMS.Application.DTOs.Documents;
 using DMS.Application.Interfaces;
+using DMS.Domain.Entities;
+using Newtonsoft.Json;
 
 namespace DMS.Application.Services;
 
@@ -45,7 +47,11 @@ public class DocumentService
                 return resp;
             }
 
-            if (!_fileStorage.IsAllowedSize(fileStream.Length))
+            using var buffer = new MemoryStream();
+            await fileStream.CopyToAsync(buffer);
+            var fileBytes = buffer.ToArray();
+
+            if (!_fileStorage.IsAllowedSize(fileBytes.Length))
             {
                 var resp = ResponseHelper.Validation("File size must be between 500KB and 5MB.");
                 _commonFunctions.LogEvent("DocumentService.cs", "UploadAsync", paramsJson, resp.message, 0, clientId.ToString());
@@ -61,12 +67,27 @@ public class DocumentService
                 return resp;
             }
 
-            var (storedName, filePath) = await _fileStorage.SaveFileAsync(fileStream, originalName, clientId);
+            var fileBase64 = Convert.ToBase64String(fileBytes);
+            var (storedName, filePath) = await _fileStorage.SaveFileAsync(fileBytes, originalName, clientId);
             var ds = await _documentRepo.UploadDataSetAsync(
                 clientId, categoryId, category.CategoryName, storedName, originalName,
-                filePath, extension, fileStream.Length, source, clientId);
+                filePath, extension, fileBytes.Length, source, clientId, fileBase64);
 
-            var result = await _spResponse.FromCommandDataSetAsync(ds);
+            var result = await _spResponse.FromCommandDataSetAsync(ds, "Document uploaded successfully.");
+            if (result.status)
+            {
+                result.jsonstring = JsonConvert.SerializeObject(new
+                {
+                    fileId = result.jsonstring,
+                    fileName = storedName,
+                    originalFileName = originalName,
+                    fileExtension = extension,
+                    fileSize = fileBytes.Length,
+                    contentType = _fileStorage.GetContentType(extension),
+                    fileBase64
+                });
+            }
+
             _commonFunctions.LogEvent("DocumentService.cs", "UploadAsync", paramsJson, result.message, result.status ? 0 : 1, clientId.ToString());
             return result;
         }
@@ -122,22 +143,70 @@ public class DocumentService
         }
     }
 
-    public async Task<DocumentDownloadResult> DownloadAsync(long fileId)
+    public async Task<Response> DownloadAsync(long fileId)
     {
+        var paramsJson = await _commonFunctions.StringParamsToJson(fileId);
         try
         {
             var doc = await _documentRepo.GetByIdAsync(fileId);
             if (doc == null)
-                return new DocumentDownloadResult(ResponseHelper.NotFoundResponse("Document not found."), null, null, null);
+            {
+                var notFound = ResponseHelper.NotFoundResponse("Document not found.");
+                _commonFunctions.LogEvent("DocumentService.cs", "DownloadAsync", paramsJson, notFound.message, 0, fileId.ToString());
+                return notFound;
+            }
 
-            var (stream, contentType) = await _fileStorage.GetFileAsync(doc.FilePath);
-            return new DocumentDownloadResult(null, stream, contentType, doc.OriginalFileName);
+            string? fileBase64 = null;
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(doc.FilePath))
+                {
+                    var fileResult = await _fileStorage.TryGetFileAsync(doc.FilePath);
+                    if (fileResult.HasValue)
+                    {
+                        await using var stream = fileResult.Value.stream;
+                        using var ms = new MemoryStream();
+                        await stream.CopyToAsync(ms);
+                        fileBase64 = Convert.ToBase64String(ms.ToArray());
+                    }
+                }
+            }
+            catch (Exception readEx)
+            {
+                _commonFunctions.LogEvent("DocumentService.cs", "DownloadAsync", paramsJson,
+                    $"File path read failed, using stored base64. {readEx.Message}", 0, fileId.ToString());
+            }
+
+            if (string.IsNullOrWhiteSpace(fileBase64))
+                fileBase64 = doc.FileBase64;
+
+            if (string.IsNullOrWhiteSpace(fileBase64))
+            {
+                var unavailable = ResponseHelper.NotFoundResponse("Document file is not available.");
+                _commonFunctions.LogEvent("DocumentService.cs", "DownloadAsync", paramsJson, unavailable.message, 0, fileId.ToString());
+                return unavailable;
+            }
+
+            var resp = ResponseHelper.Success("Document retrieved successfully.");
+            resp.jsonstring = JsonConvert.SerializeObject(new
+            {
+                fileId = doc.FileId,
+                fileName = doc.FileName,
+                originalFileName = doc.OriginalFileName,
+                fileExtension = doc.FileExtension,
+                fileSize = doc.FileSize,
+                contentType = _fileStorage.GetContentType(doc.FileExtension),
+                fileBase64
+            });
+
+            _commonFunctions.LogEvent("DocumentService.cs", "DownloadAsync", paramsJson, resp.message, 0, fileId.ToString());
+            return resp;
         }
         catch (Exception ex)
         {
-            var paramsJson = await _commonFunctions.StringParamsToJson(fileId);
             _commonFunctions.LogEvent("DocumentService.cs", "DownloadAsync", paramsJson, ex.ToString(), 1, fileId.ToString());
-            return new DocumentDownloadResult(ResponseHelper.InternalErrorResponse(), null, null, null);
+            return ResponseHelper.InternalErrorResponse();
         }
     }
 }

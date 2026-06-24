@@ -16,8 +16,11 @@ public static class ValidationRules
     public static string NormalizePanNumber(string pan) => pan.Trim().ToUpperInvariant();
 
     /// <summary>Admin keeps literal username; clients use PAN format.</summary>
-    public static string NormalizeLoginUsername(string username)
+    public static string NormalizeLoginUsername(string? username)
     {
+        if (string.IsNullOrWhiteSpace(username))
+            return string.Empty;
+
         var trimmed = username.Trim();
         if (string.Equals(trimmed, "admin", StringComparison.OrdinalIgnoreCase))
             return "admin";

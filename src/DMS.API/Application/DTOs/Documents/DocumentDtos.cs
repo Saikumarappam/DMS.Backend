@@ -1,8 +1,4 @@
-using DMS.Application.DTOs.Common;
-
 namespace DMS.Application.DTOs.Documents;
-
-public record DocumentDownloadResult(Response? Error, Stream? Stream, string? ContentType, string? FileName);
 
 public class DocumentUploadRequest
 {

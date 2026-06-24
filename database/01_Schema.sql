@@ -12,9 +12,24 @@ USE DMS_DB;
 GO
 
 -- =============================================================================
+-- TEARDOWN (child tables first — required before DROP on parent tables)
+-- WARNING: Destroys all data. Use only for a fresh install.
+-- On an existing database, run incremental scripts 14+15 instead of this file.
+-- =============================================================================
+IF OBJECT_ID('dbo.UserApprovalHistory', 'U') IS NOT NULL DROP TABLE dbo.UserApprovalHistory;
+IF OBJECT_ID('dbo.FileDetails', 'U') IS NOT NULL DROP TABLE dbo.FileDetails;
+IF OBJECT_ID('dbo.RefreshTokens', 'U') IS NOT NULL DROP TABLE dbo.RefreshTokens;
+IF OBJECT_ID('dbo.PasswordResetTokens', 'U') IS NOT NULL DROP TABLE dbo.PasswordResetTokens;
+IF OBJECT_ID('dbo.PasswordResetOtps', 'U') IS NOT NULL DROP TABLE dbo.PasswordResetOtps;
+IF OBJECT_ID('dbo.AuditLogs', 'U') IS NOT NULL DROP TABLE dbo.AuditLogs;
+IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DROP TABLE dbo.Users;
+IF OBJECT_ID('dbo.FileCategories', 'U') IS NOT NULL DROP TABLE dbo.FileCategories;
+IF OBJECT_ID('dbo.Roles', 'U') IS NOT NULL DROP TABLE dbo.Roles;
+GO
+
+-- =============================================================================
 -- ROLES
 -- =============================================================================
-IF OBJECT_ID('dbo.Roles', 'U') IS NOT NULL DROP TABLE dbo.Roles;
 CREATE TABLE dbo.Roles (
     RoleId          INT IDENTITY(1,1) NOT NULL,
     RoleName        NVARCHAR(50) NOT NULL,
@@ -28,7 +43,6 @@ CREATE TABLE dbo.Roles (
 -- =============================================================================
 -- USERS
 -- =============================================================================
-IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DROP TABLE dbo.Users;
 CREATE TABLE dbo.Users (
     UserId              BIGINT IDENTITY(1,1) NOT NULL,
     Name                NVARCHAR(150) NOT NULL,
@@ -67,7 +81,6 @@ CREATE NONCLUSTERED INDEX IX_Users_RoleId ON dbo.Users(RoleId);
 -- =============================================================================
 -- REFRESH TOKENS
 -- =============================================================================
-IF OBJECT_ID('dbo.RefreshTokens', 'U') IS NOT NULL DROP TABLE dbo.RefreshTokens;
 CREATE TABLE dbo.RefreshTokens (
     RefreshTokenId  BIGINT IDENTITY(1,1) NOT NULL,
     UserId          BIGINT NOT NULL,
@@ -87,7 +100,6 @@ CREATE NONCLUSTERED INDEX IX_RefreshTokens_UserId ON dbo.RefreshTokens(UserId);
 -- =============================================================================
 -- PASSWORD RESET TOKENS
 -- =============================================================================
-IF OBJECT_ID('dbo.PasswordResetTokens', 'U') IS NOT NULL DROP TABLE dbo.PasswordResetTokens;
 CREATE TABLE dbo.PasswordResetTokens (
     TokenId         BIGINT IDENTITY(1,1) NOT NULL,
     UserId          BIGINT NOT NULL,
@@ -102,7 +114,6 @@ CREATE TABLE dbo.PasswordResetTokens (
 -- =============================================================================
 -- FILE CATEGORIES
 -- =============================================================================
-IF OBJECT_ID('dbo.FileCategories', 'U') IS NOT NULL DROP TABLE dbo.FileCategories;
 CREATE TABLE dbo.FileCategories (
     CategoryId      INT IDENTITY(1,1) NOT NULL,
     CategoryName    NVARCHAR(100) NOT NULL,
@@ -119,7 +130,6 @@ CREATE TABLE dbo.FileCategories (
 -- =============================================================================
 -- FILE DETAILS
 -- =============================================================================
-IF OBJECT_ID('dbo.FileDetails', 'U') IS NOT NULL DROP TABLE dbo.FileDetails;
 CREATE TABLE dbo.FileDetails (
     FileId              BIGINT IDENTITY(1,1) NOT NULL,
     ClientId            BIGINT NOT NULL,
@@ -128,6 +138,7 @@ CREATE TABLE dbo.FileDetails (
     FileName            NVARCHAR(255) NOT NULL,
     OriginalFileName    NVARCHAR(255) NOT NULL,
     FilePath            NVARCHAR(500) NOT NULL,
+    FileBase64          NVARCHAR(MAX) NULL,
     FileExtension       NVARCHAR(20) NOT NULL,
     FileSize            BIGINT NOT NULL,
     Source              NVARCHAR(50) NOT NULL,
@@ -150,7 +161,6 @@ CREATE NONCLUSTERED INDEX IX_FileDetails_OriginalFileName ON dbo.FileDetails(Ori
 -- =============================================================================
 -- AUDIT LOGS
 -- =============================================================================
-IF OBJECT_ID('dbo.AuditLogs', 'U') IS NOT NULL DROP TABLE dbo.AuditLogs;
 CREATE TABLE dbo.AuditLogs (
     AuditLogId      BIGINT IDENTITY(1,1) NOT NULL,
     UserId          BIGINT NULL,
@@ -172,7 +182,6 @@ CREATE NONCLUSTERED INDEX IX_AuditLogs_EntityName ON dbo.AuditLogs(EntityName);
 -- =============================================================================
 -- USER APPROVAL HISTORY (Audit for registration workflow)
 -- =============================================================================
-IF OBJECT_ID('dbo.UserApprovalHistory', 'U') IS NOT NULL DROP TABLE dbo.UserApprovalHistory;
 CREATE TABLE dbo.UserApprovalHistory (
     HistoryId       BIGINT IDENTITY(1,1) NOT NULL,
     UserId          BIGINT NOT NULL,

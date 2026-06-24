@@ -9,6 +9,7 @@ public class FileDetail
     public string FileName { get; set; } = string.Empty;
     public string OriginalFileName { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
+    public string? FileBase64 { get; set; }
     public string FileExtension { get; set; } = string.Empty;
     public long FileSize { get; set; }
     public string Source { get; set; } = string.Empty;

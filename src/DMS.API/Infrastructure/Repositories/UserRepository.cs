@@ -19,6 +19,9 @@ public class UserRepository : SqlRepositoryBase, IUserRepository
     public Task<DataSet> GetByUsernameDataSetAsync(string username) =>
         FetchSpDatasetAsync("sp_User_GetByUsername", username);
 
+    public Task<DataSet> GetByPanDataSetAsync(string panNumber) =>
+        FetchSpDatasetAsync("sp_User_GetByPan", panNumber);
+
     public Task<DataSet> GetByEmailDataSetAsync(string email) =>
         FetchSpDatasetAsync("sp_User_GetByEmail", email);
 
@@ -56,6 +59,18 @@ public class UserRepository : SqlRepositoryBase, IUserRepository
         return SpDataSetReader.MapFirstOrDefault<User>(ds);
     }
 
+    public async Task<(User? User, string? NotFoundMessage)> GetByUsernameOrMessageAsync(string username)
+    {
+        var ds = await GetByUsernameDataSetAsync(username);
+        return ParseUserQueryResult(ds);
+    }
+
+    public async Task<User?> GetByPanAsync(string panNumber)
+    {
+        var ds = await GetByPanDataSetAsync(panNumber);
+        return SpDataSetReader.MapFirstOrDefault<User>(ds);
+    }
+
     public async Task<User?> GetByIdAsync(long userId)
     {
         var ds = await GetByIdDataSetAsync(userId);
@@ -70,4 +85,12 @@ public class UserRepository : SqlRepositoryBase, IUserRepository
 
     public static User? MapUserFromLoginDataSet(DataSet ds) =>
         SpDataSetReader.MapFromTable<User>(ds, 1);
+
+    private static (User? User, string? NotFoundMessage) ParseUserQueryResult(DataSet ds)
+    {
+        if (SpDataSetReader.TryParseInlineQueryResult(ds, out var success, out var message) && !success)
+            return (null, string.IsNullOrWhiteSpace(message) ? "User not found." : message);
+
+        return (SpDataSetReader.MapFirstOrDefault<User>(ds), null);
+    }
 }

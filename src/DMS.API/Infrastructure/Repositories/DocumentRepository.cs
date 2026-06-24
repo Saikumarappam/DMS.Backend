@@ -12,9 +12,9 @@ public class DocumentRepository : SqlRepositoryBase, IDocumentRepository
 
     public Task<DataSet> UploadDataSetAsync(
         long clientId, int categoryId, string categoryName, string fileName, string originalName,
-        string filePath, string extension, long fileSize, string source, long createdBy) =>
+        string filePath, string extension, long fileSize, string source, long createdBy, string? fileBase64 = null) =>
         FetchSpDatasetAsync("sp_Document_Upload",
-            clientId, categoryId, categoryName, fileName, originalName, filePath, extension, fileSize, source, createdBy);
+            clientId, categoryId, categoryName, fileName, originalName, filePath, extension, fileSize, source, createdBy, DbValue(fileBase64));
 
     public Task<DataSet> GetHistoryDataSetAsync(long? clientId, int? categoryId, DateTime? from, DateTime? to, string? search) =>
         FetchSpDatasetAsync("sp_Document_GetHistory",

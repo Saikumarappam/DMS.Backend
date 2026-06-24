@@ -22,28 +22,28 @@ public class NotificationService : INotificationService
 
     public async Task SendApprovalCredentialsAsync(string name, string email, string username, string password)
     {
-        var subject = "Your DMS account has been approved";
+        var subject = "Your ProfitSheild account has been approved";
         var body = EmailTemplates.ApprovalCredentials(name, username, password);
         await SendEmailSafe(email, subject, body, "approval credentials");
     }
 
     public async Task SendForgotPasswordOtpAsync(string name, string email, string otp, int expiryMinutes)
     {
-        var subject = "DMS password reset OTP";
+        var subject = "ProfitSheild password reset OTP";
         var body = EmailTemplates.ForgotPasswordOtp(name, otp, expiryMinutes);
         await SendEmailSafe(email, subject, body, "password reset OTP");
     }
 
     public async Task SendPasswordResetConfirmationAsync(string name, string email, string username, string newPassword)
     {
-        var subject = "Your DMS password has been updated";
+        var subject = "Your ProfitSheild password has been updated";
         var body = EmailTemplates.PasswordResetConfirmation(name, username, newPassword);
         await SendEmailSafe(email, subject, body, "password reset confirmation");
     }
 
     public async Task SendRegistrationAcknowledgementAsync(string email, string name)
     {
-        var subject = "DMS registration received";
+        var subject = "ProfitSheild registration received";
         var body = EmailTemplates.RegistrationAcknowledgement(name);
         await SendEmailSafe(email, subject, body, "registration acknowledgement");
     }

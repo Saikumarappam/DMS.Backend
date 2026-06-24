@@ -104,11 +104,19 @@ public class AuthService
                 return missing;
             }
 
-            var user = await _userRepo.GetByUsernameAsync(username);
-            var (isPasswordValid, shouldRehash) = ValidatePassword(user, request.Password);
             var maxAttempts = _configuration.GetValue("Auth:MaxLoginAttempts", 5);
             var lockoutMinutes = _configuration.GetValue("Auth:LockoutMinutes", 30);
 
+            var (user, _) = await ResolveUserForLoginAsync(username);
+            if (user == null)
+            {
+                var notFoundDs = await _userRepo.LoginDataSetAsync(username, false, maxAttempts, lockoutMinutes);
+                var notFoundResp = await _spResponse.FromCommandDataSetAsync(notFoundDs);
+                _commonFunctions.LogEvent("AuthService.cs", "LoginAsync", paramsJson, notFoundResp.message, 0, username);
+                return notFoundResp;
+            }
+
+            var (isPasswordValid, shouldRehash) = ValidatePassword(user, request.Password);
             var loginDs = await _userRepo.LoginDataSetAsync(username, isPasswordValid, maxAttempts, lockoutMinutes);
             var loginResp = await _spResponse.FromCommandDataSetAsync(loginDs);
             if (!loginResp.status)
@@ -401,6 +409,22 @@ public class AuthService
             _commonFunctions.LogEvent("AuthService.cs", "ResetPasswordAsync", paramsJson, ex.ToString(), 1, request.Email);
             return ResponseHelper.InternalErrorResponse();
         }
+    }
+
+    private async Task<(User? User, string? LookupMessage)> ResolveUserForLoginAsync(string username)
+    {
+        var (user, notFoundMessage) = await _userRepo.GetByUsernameOrMessageAsync(username);
+        if (user != null)
+            return (user, null);
+
+        if (ValidationRules.IsValidPanNumber(username))
+        {
+            var panUser = await _userRepo.GetByPanAsync(username);
+            if (panUser != null)
+                return (panUser, null);
+        }
+
+        return (null, notFoundMessage);
     }
 
     private (bool isValid, bool shouldRehash) ValidatePassword(User? user, string password)
