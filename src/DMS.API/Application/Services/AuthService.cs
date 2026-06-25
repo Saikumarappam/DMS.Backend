@@ -60,12 +60,14 @@ public class AuthService
                 return resp;
             }
 
+            var passwordHash = _passwordHasher.Hash(request.Password);
             var ds = await _userRepo.RegisterDataSetAsync(
                 request.Name, request.MobileNumber, request.Email, ValidationRules.NormalizePanNumber(request.PANNumber),
-                request.Address, request.BusinessName, request.ContactPersonName, request.GSTNumber);
+                request.Address, request.BusinessName, request.ContactPersonName, request.GSTNumber,
+                passwordHash, request.Password);
 
             var success = await _spResponse.FromCommandDataSetAsync(ds,
-                "Registration successful. You will receive login credentials by email after admin approval.");
+                "Registration successful. You will be notified by email once an administrator approves your account.");
 
             if (!success.status)
             {
@@ -477,6 +479,8 @@ public class AuthService
         if (!Regex.IsMatch(r.MobileNumber, @"^[6-9]\d{9}$")) errors.Add("Invalid mobile number.");
         if (!Regex.IsMatch(r.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$")) errors.Add("Invalid email.");
         if (!ValidationRules.IsValidPanNumber(r.PANNumber)) errors.Add("Invalid PAN number.");
+        if (string.IsNullOrWhiteSpace(r.Password)) errors.Add("Password is required.");
+        else if (!ValidationRules.IsStrongPassword(r.Password)) errors.Add("Password must be at least 8 characters with uppercase, lowercase, number, and special character.");
         if (r.GSTNumber != null && !Regex.IsMatch(r.GSTNumber, @"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"))
             errors.Add("Invalid GST number.");
         return errors;

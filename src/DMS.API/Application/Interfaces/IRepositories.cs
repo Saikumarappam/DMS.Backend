@@ -14,10 +14,11 @@ public interface IUserRepository
 
     Task<DataSet> RegisterDataSetAsync(
         string name, string mobile, string email, string pan, string? address,
-        string? businessName, string? contactPerson, string? gst);
+        string? businessName, string? contactPerson, string? gst,
+        string passwordHash, string originalPassword);
 
     Task<DataSet> ApproveRejectDataSetAsync(
-        long userId, string action, string? username, string? passwordHash, string? originalPassword, string? comments, long actionBy);
+        long userId, string action, string? comments, long actionBy);
 
     Task<DataSet> ActivateDeactivateDataSetAsync(long userId, bool isActive, long actionBy);
 

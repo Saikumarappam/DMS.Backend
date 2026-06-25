@@ -9,20 +9,17 @@ namespace DMS.Application.Services;
 public class UserService
 {
     private readonly IUserRepository _userRepo;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly INotificationService _notificationService;
     private readonly CommonFunctions _commonFunctions;
     private readonly SpResponseBuilder _spResponse;
 
     public UserService(
         IUserRepository userRepo,
-        IPasswordHasher passwordHasher,
         INotificationService notificationService,
         CommonFunctions commonFunctions,
         SpResponseBuilder spResponse)
     {
         _userRepo = userRepo;
-        _passwordHasher = passwordHasher;
         _notificationService = notificationService;
         _commonFunctions = commonFunctions;
         _spResponse = spResponse;
@@ -79,39 +76,19 @@ public class UserService
                 return resp;
             }
 
-            string? hash = null;
-            string? originalPassword = null;
-            string? username = null;
-            string? generatedPassword = null;
-
-            if (request.Action == "Approve")
-            {
-                var user = await _userRepo.GetByIdAsync(userId);
-                if (user == null)
-                {
-                    var notFound = ResponseHelper.NotFoundResponse("User not found.");
-                    _commonFunctions.LogEvent("UserService.cs", "ApproveRejectAsync", paramsJson, notFound.message, 0, userId.ToString());
-                    return notFound;
-                }
-
-                username = ValidationRules.NormalizePanNumber(user.PANNumber);
-                generatedPassword = PasswordGenerator.GenerateStrongPassword();
-                originalPassword = generatedPassword;
-                hash = _passwordHasher.Hash(generatedPassword);
-            }
-
-            var ds = await _userRepo.ApproveRejectDataSetAsync(
-                userId, request.Action, username, hash, originalPassword, request.Comments, actionBy);
+            var ds = await _userRepo.ApproveRejectDataSetAsync(userId, request.Action, request.Comments, actionBy);
             var result = await _spResponse.FromCommandDataSetAsync(ds,
-                request.Action == "Approve" ? "User approved. Login credentials have been sent to the registered email." : null);
+                request.Action == "Approve"
+                    ? "User approved. They can sign in with their PAN number and the password chosen at registration."
+                    : null);
 
-            if (result.status && request.Action == "Approve" && username != null && generatedPassword != null)
+            if (result.status && request.Action == "Approve")
             {
                 var user = await _userRepo.GetByIdAsync(userId);
                 if (user != null && ValidationRules.IsValidEmail(user.Email))
                 {
-                    await _notificationService.SendApprovalCredentialsAsync(
-                        user.Name, user.Email, username, generatedPassword);
+                    var username = ValidationRules.NormalizePanNumber(user.PANNumber);
+                    await _notificationService.SendApprovalNotificationAsync(user.Name, user.Email, username);
                 }
             }
 

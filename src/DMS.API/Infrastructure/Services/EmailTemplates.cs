@@ -9,7 +9,19 @@ public static class EmailTemplates
         $"""
         <p>Dear {Encode(name)},</p>
         <p>Thank you for registering with the Document Management System.</p>
-        <p>Your application is under review. You will receive your login credentials by email once an administrator approves your account.</p>
+        <p>Your application is under review. Once approved, sign in using your PAN number as the username and the password you chose during registration.</p>
+        <p>Regards,<br/>DMS Team</p>
+        """);
+
+    public static string ApprovalNotification(string name, string username) => Wrap(
+        "Your DMS Account Has Been Approved",
+        $"""
+        <p>Dear {Encode(name)},</p>
+        <p>Your account has been approved. You can now sign in with:</p>
+        <table style="border-collapse:collapse;margin:16px 0;">
+          <tr><td style="padding:8px 12px;background:#f4f4f4;font-weight:bold;">Username</td><td style="padding:8px 12px;">{Encode(username)}</td></tr>
+          <tr><td style="padding:8px 12px;background:#f4f4f4;font-weight:bold;">Password</td><td style="padding:8px 12px;">Use the password you set during registration</td></tr>
+        </table>
         <p>Regards,<br/>DMS Team</p>
         """);
 

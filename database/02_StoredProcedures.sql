@@ -15,6 +15,8 @@ CREATE PROCEDURE dbo.sp_User_Register
     @BusinessName       NVARCHAR(200) = NULL,
     @ContactPersonName  NVARCHAR(150) = NULL,
     @GSTNumber          NVARCHAR(15) = NULL,
+    @PasswordHash       NVARCHAR(500),
+    @OriginalPassword   NVARCHAR(100),
     @RoleId             INT = 2,
     @UserId             BIGINT OUTPUT,
     @ResultCode         INT OUTPUT,
@@ -25,6 +27,12 @@ BEGIN
     SET @ResultCode = 0;
     SET @ResultMessage = 'Success';
 
+    IF @PasswordHash IS NULL OR @OriginalPassword IS NULL
+    BEGIN 
+    SET @ResultCode = -5; SET @ResultMessage = 'Password is required.'; 
+    RETURN;
+    END
+
     IF EXISTS (SELECT 1 FROM dbo.Users WHERE MobileNumber = @MobileNumber)
     BEGIN SET @ResultCode = -1; SET @ResultMessage = 'Mobile number already registered.'; RETURN; END
     IF EXISTS (SELECT 1 FROM dbo.Users WHERE Email = @Email)
@@ -34,16 +42,16 @@ BEGIN
     IF @GSTNumber IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.Users WHERE GSTNumber = @GSTNumber)
     BEGIN SET @ResultCode = -4; SET @ResultMessage = 'GST number already registered.'; RETURN; END
 
-    INSERT INTO dbo.Users (Name, MobileNumber, Email, PANNumber, Address, BusinessName,
-        ContactPersonName, GSTNumber, RoleId, UserStatus, ProfileCompleted)
+    INSERT INTO dbo.Users (Name, MobileNumber, Email, PANNumber,Address, BusinessName,
+        ContactPersonName, GSTNumber,UserName, PasswordHash, OriginalPassword, RoleId, UserStatus, ProfileCompleted)
     VALUES (@Name, @MobileNumber, @Email, @PANNumber, @Address, @BusinessName,
-        @ContactPersonName, @GSTNumber, @RoleId, 'PendingApproval', 0);
+        @ContactPersonName, @GSTNumber,@PANNumber, @PasswordHash, @OriginalPassword, @RoleId, 'PendingApproval', 0);
 
     SET @UserId = SCOPE_IDENTITY();
 
     INSERT INTO dbo.AuditLogs (UserId, Action, EntityName, EntityId, NewValues)
     VALUES (@UserId, 'Register', 'Users', CAST(@UserId AS NVARCHAR(50)),
-        CONCAT('Name=', @Name, ';Email=', @Email));
+        CONCAT('Name=', @Name, ';Email=', @Email, ';PAN=', @PANNumber));
 END
 GO
 
@@ -55,9 +63,6 @@ GO
 CREATE PROCEDURE dbo.sp_User_ApproveReject
     @UserId             BIGINT,
     @Action             NVARCHAR(20),
-    @Username           NVARCHAR(50) = NULL,
-    @PasswordHash       NVARCHAR(500) = NULL,
-    @OriginalPassword   NVARCHAR(100) = NULL,
     @Comments           NVARCHAR(500) = NULL,
     @ActionBy           BIGINT,
     @ResultCode         INT OUTPUT,
@@ -69,19 +74,20 @@ BEGIN
     SET @ResultMessage = 'Success';
 
     DECLARE @PANNumber NVARCHAR(10);
+    DECLARE @PasswordHash NVARCHAR(500);
 
     IF NOT EXISTS (SELECT 1 FROM dbo.Users WHERE UserId = @UserId)
     BEGIN SET @ResultCode = -1; SET @ResultMessage = 'User not found.'; RETURN; END
 
-    SELECT @PANNumber = PANNumber FROM dbo.Users WHERE UserId = @UserId;
+    SELECT @PANNumber = PANNumber, @PasswordHash = PasswordHash
+    FROM dbo.Users WHERE UserId = @UserId;
 
     IF @Action = 'Approve'
     BEGIN
-        IF @PasswordHash IS NULL OR @OriginalPassword IS NULL
-        BEGIN SET @ResultCode = -2; SET @ResultMessage = 'Password is required for approval.'; RETURN; END
+        IF @PasswordHash IS NULL
+        BEGIN SET @ResultCode = -2; SET @ResultMessage = 'Registration password not found. User must register with a password.'; RETURN; END
 
-        UPDATE dbo.Users SET Username = @PANNumber, PasswordHash = @PasswordHash,
-            OriginalPassword = @OriginalPassword, UserStatus = 'Approved',
+        UPDATE dbo.Users SET Username = @PANNumber, UserStatus = 'Approved',
             ModifiedBy = @ActionBy, ModifiedDate = SYSUTCDATETIME()
         WHERE UserId = @UserId;
     END

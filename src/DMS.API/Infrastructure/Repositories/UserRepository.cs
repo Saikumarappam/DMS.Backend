@@ -27,18 +27,20 @@ public class UserRepository : SqlRepositoryBase, IUserRepository
 
     public Task<DataSet> RegisterDataSetAsync(
         string name, string mobile, string email, string pan, string? address,
-        string? businessName, string? contactPerson, string? gst) =>
+        string? businessName, string? contactPerson, string? gst,
+        string passwordHash, string originalPassword) =>
         FetchSpDatasetAsync("sp_User_Register",
             name, mobile, email, pan,
-            DbValue(address), DbValue(businessName), DbValue(contactPerson), DbValue(gst), 2);
+            DbValue(address), DbValue(businessName), DbValue(contactPerson), DbValue(gst),
+            passwordHash, originalPassword, 2);
 
     public Task<DataSet> LoginDataSetAsync(string username, bool isPasswordValid, int maxAttempts = 5, int lockoutMinutes = 30) =>
         FetchSpDatasetAsync("sp_User_Login", username, isPasswordValid, maxAttempts, lockoutMinutes);
 
     public Task<DataSet> ApproveRejectDataSetAsync(
-        long userId, string action, string? username, string? passwordHash, string? originalPassword, string? comments, long actionBy) =>
+        long userId, string action, string? comments, long actionBy) =>
         FetchSpDatasetAsync("sp_User_ApproveReject",
-            userId, action, DbValue(username), DbValue(passwordHash), DbValue(originalPassword), DbValue(comments), actionBy);
+            userId, action, DbValue(comments), actionBy);
 
     public Task<DataSet> ActivateDeactivateDataSetAsync(long userId, bool isActive, long actionBy) =>
         FetchSpDatasetAsync("sp_User_ActivateDeactivate", userId, isActive, actionBy);

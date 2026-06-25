@@ -6,6 +6,7 @@ public class RegisterRequest
     public string MobileNumber { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PANNumber { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
     public string? Address { get; set; }
     public string? BusinessName { get; set; }
     public string? ContactPersonName { get; set; }

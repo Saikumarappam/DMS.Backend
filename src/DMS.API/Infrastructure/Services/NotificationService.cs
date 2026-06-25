@@ -20,11 +20,11 @@ public class NotificationService : INotificationService
         _emailSender = emailSender;
     }
 
-    public async Task SendApprovalCredentialsAsync(string name, string email, string username, string password)
+    public async Task SendApprovalNotificationAsync(string name, string email, string username)
     {
         var subject = "Your ProfitSheild account has been approved";
-        var body = EmailTemplates.ApprovalCredentials(name, username, password);
-        await SendEmailSafe(email, subject, body, "approval credentials");
+        var body = EmailTemplates.ApprovalNotification(name, username);
+        await SendEmailSafe(email, subject, body, "approval notification");
     }
 
     public async Task SendForgotPasswordOtpAsync(string name, string email, string otp, int expiryMinutes)
