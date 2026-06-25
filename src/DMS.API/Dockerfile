@@ -5,9 +5,9 @@ WORKDIR /src
 
 COPY . .
 
-RUN dotnet restore
+RUN dotnet restore "DMS.API.csproj"
 
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish "DMS.API.csproj" -c Release -o /app/publish --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
@@ -20,4 +20,4 @@ ENV ASPNETCORE_URLS=http://+:10000
 
 EXPOSE 10000
 
-ENTRYPOINT ["dotnet","DMS.API.dll"]
+ENTRYPOINT ["dotnet", "DMS.API.dll"]
