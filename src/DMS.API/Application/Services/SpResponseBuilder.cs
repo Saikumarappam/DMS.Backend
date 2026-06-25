@@ -96,31 +96,32 @@ public class SpResponseBuilder
     /// <summary>
     /// Login/refresh response: token + data.Array0 (user) + jsonstring (refresh session).
     /// </summary>
-    public async Task<Response> BuildAuthTokenResponseAsync(
-        DataSet userDs,
-        string accessToken,
-        string refreshToken,
-        DateTime expiresAt,
-        string message = "Login successful.")
+    public async Task<TokenResponse> BuildAuthTokenResponseAsync(DataSet userDs, string accessToken, string refreshToken, DateTime expiresAt, string message = "Login successful.")
     {
         var resp = await FromDataSetAsync(userDs, message, "User profile not found.");
+
         if (!resp.status)
-            return ResponseHelper.InternalErrorResponse("Unable to load user profile after authentication.");
-
-        resp.status = true;
-        resp.statuscode = "0";
-        resp.message = message;
-        resp.token = accessToken;
-        resp.jsonstring = JsonConvert.SerializeObject(new
         {
-            refreshToken,
-            expiresAt = expiresAt.ToUniversalTime().ToString("O")
-        });
+            return new TokenResponse
+            {
+                status = false,
+                statuscode = "500",
+                message = "Unable to load user profile after authentication."
+            };
+        }
 
-        return resp;
+        return new TokenResponse
+        {
+            status = true,
+            statuscode = "0",
+            message = message,
+            data = resp.data,
+            token = accessToken,
+            refreshToken = refreshToken,
+            expiresAt = expiresAt.ToUniversalTime()
+        };
     }
-
-    public Response FromSpResult(int resultCode, string message, string? token = null) =>
+    public TokenResponse FromSpResult(int resultCode, string message, string? token = null) =>
         new()
         {
             status = resultCode == 0,

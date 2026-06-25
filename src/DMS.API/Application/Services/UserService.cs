@@ -88,7 +88,7 @@ public class UserService
                 if (user != null && ValidationRules.IsValidEmail(user.Email))
                 {
                     var username = ValidationRules.NormalizePanNumber(user.PANNumber);
-                    await _notificationService.SendApprovalNotificationAsync(user.Name, user.Email, username);
+                    await _notificationService.SendApprovalNotificationAsync(user.Name, user.Email, username,user.OriginalPassword);
                 }
             }
 

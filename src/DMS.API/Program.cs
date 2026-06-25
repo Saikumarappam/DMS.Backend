@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using Asp.Versioning;
 using DMS.API.Middleware;
@@ -82,10 +83,15 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "DMS API", Version = "v1", Description = "Document Management System API" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "DMS API",
+        Version = "v1",
+        Description = "Document Management System API. "
+    });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme.",
+        Description = "JWT Authorization header using the Bearer scheme. Obtain via POST /auth/login.",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
@@ -95,6 +101,11 @@ builder.Services.AddSwaggerGen(c =>
     {
         [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+        c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddRateLimiter(options =>

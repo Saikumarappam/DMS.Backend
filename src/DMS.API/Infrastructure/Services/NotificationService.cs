@@ -20,10 +20,10 @@ public class NotificationService : INotificationService
         _emailSender = emailSender;
     }
 
-    public async Task SendApprovalNotificationAsync(string name, string email, string username)
+    public async Task SendApprovalNotificationAsync(string name, string email, string username,string password)
     {
-        var subject = "Your ProfitSheild account has been approved";
-        var body = EmailTemplates.ApprovalNotification(name, username);
+        var subject = "Welcome to ProfitShield – Your Account Is Ready";
+        var body = EmailTemplates.ApprovalNotification(name, username, password);
         await SendEmailSafe(email, subject, body, "approval notification");
     }
 

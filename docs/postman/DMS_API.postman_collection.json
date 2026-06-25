@@ -1,0 +1,456 @@
+{
+  "info": {
+    "name": "DMS API",
+    "_postman_id": "dms-api-v1-collection",
+    "description": "Document Management System API v1.\n\nSetup:\n1. Set collection variable `baseUrl` (default: http://localhost:5000/api/v1)\n2. Run **Auth > Login** — tokens are saved automatically\n3. Protected requests use Bearer {{accessToken}}\n\nDocs: API_DOCUMENTATION.md, API_QUICK_REFERENCE.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "resetToken", "value": "" },
+    { "key": "userId", "value": "42" },
+    { "key": "categoryId", "value": "1" },
+    { "key": "fileId", "value": "101" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Public auth endpoints except change-password. Frontend: login, register, forgot-password screens.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rajesh Kumar\",\n  \"mobileNumber\": \"9876543210\",\n  \"email\": \"rajesh@example.com\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"password\": \"Secure@123\",\n  \"address\": \"123 MG Road, Mumbai\",\n  \"businessName\": \"Kumar Traders\",\n  \"contactPersonName\": \"Rajesh Kumar\",\n  \"gstNumber\": \"27ABCDE1234F1Z5\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Frontend: RegisterScreen (/register). Returns userId in jsonstring on success."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.status && json.token) {",
+                  "  pm.collectionVariables.set('accessToken', json.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "  if (json.data && json.data.Array0 && json.data.Array0[0]) {",
+                  "    pm.collectionVariables.set('userId', String(json.data.Array0[0].UserId || json.data.Array0[0].userId));",
+                  "  }",
+                  "  pm.test('Login successful', () => pm.expect(json.status).to.be.true);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Frontend: LoginScreen (/login). Client: use PAN as username. Saves accessToken and refreshToken to collection variables."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.status && json.token) {",
+                  "  pm.collectionVariables.set('accessToken', json.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Frontend: AuthInterceptor (auto on 401)."
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Admin@123\",\n  \"newPassword\": \"NewAdmin@456\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/change-password",
+            "description": "Frontend: ChangePasswordScreen (/change-password). Requires Bearer token."
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rajesh@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "Frontend: PasswordRecoveryScreen step 1. Sends OTP email if account exists."
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.status && json.jsonstring) {",
+                  "  pm.collectionVariables.set('resetToken', json.jsonstring);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rajesh@example.com\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-otp",
+            "description": "Frontend: PasswordRecoveryScreen step 2. Saves resetToken from jsonstring."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rajesh@example.com\",\n  \"resetToken\": \"{{resetToken}}\",\n  \"newPassword\": \"NewSecure@456\",\n  \"confirmPassword\": \"NewSecure@456\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password",
+            "description": "Frontend: PasswordRecoveryScreen step 3."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Profile and admin user management. Frontend: ProfileScreen, UserManagementScreen.",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/profile",
+            "description": "Frontend: ProfileScreen, authProvider.refreshProfile."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rajesh Kumar\",\n  \"mobileNumber\": \"9876543210\",\n  \"email\": \"rajesh@example.com\",\n  \"address\": \"456 Park Street\",\n  \"businessName\": \"Kumar Traders Pvt Ltd\",\n  \"contactPersonName\": \"Rajesh Kumar\",\n  \"gstNumber\": \"27ABCDE1234F1Z5\",\n  \"profileCompleted\": true\n}"
+            },
+            "url": "{{baseUrl}}/users/profile",
+            "description": "Frontend: ProfileScreen (/profile)."
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users?status=Pending&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "status", "value": "Pending", "description": "Pending | Approved | Active | Rejected" },
+                { "key": "search", "value": "" }
+              ]
+            },
+            "description": "Frontend: UserManagementScreen (/admin/users). SuperAdmin only."
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "SuperAdmin or own ID. Not wired in current frontend."
+          }
+        },
+        {
+          "name": "Approve User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"Approve\",\n  \"comments\": \"Documents verified\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/approval",
+            "description": "Frontend: UserManagementScreen approve dialog. action: Approve | Reject."
+          }
+        },
+        {
+          "name": "Reject User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"Reject\",\n  \"comments\": \"Incomplete documentation\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/approval"
+          }
+        },
+        {
+          "name": "Set User Status",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/status?isActive=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "status"],
+              "query": [{ "key": "isActive", "value": "true" }]
+            },
+            "description": "Frontend: UserManagementScreen activate/deactivate toggle."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "description": "Frontend: UploadDocumentScreen, HistoryScreen, CategoryManagementScreen.",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/categories?includeInactive=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"],
+              "query": [{ "key": "includeInactive", "value": "false" }]
+            }
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryName\": \"Invoice Documents\",\n  \"description\": \"Customer and vendor invoices\"\n}"
+            },
+            "url": "{{baseUrl}}/categories",
+            "description": "SuperAdmin only. Frontend: CategoryManagementScreen."
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryName\": \"Invoice Documents\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/categories/{{categoryId}}",
+            "description": "Soft-delete (deactivate). SuperAdmin only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "description": "Frontend: UploadDocumentScreen, HistoryScreen, ClientDashboardScreen.",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "source", "value": "Postman", "type": "text" },
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/documents/upload",
+            "description": "Select a JPG/PNG/PDF file (500KB–5MB). Frontend: UploadDocumentScreen (/upload)."
+          }
+        },
+        {
+          "name": "Document History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/documents/history?categoryId=&fromDate=2026-01-01&toDate=2026-12-31&searchFileName=",
+              "host": ["{{baseUrl}}"],
+              "path": ["documents", "history"],
+              "query": [
+                { "key": "clientId", "value": "", "description": "SuperAdmin only", "disabled": true },
+                { "key": "categoryId", "value": "" },
+                { "key": "fromDate", "value": "2026-01-01" },
+                { "key": "toDate", "value": "2026-12-31" },
+                { "key": "searchFileName", "value": "" }
+              ]
+            },
+            "description": "Frontend: HistoryScreen (/history). Client auto-scoped to own uploads."
+          }
+        },
+        {
+          "name": "Client Dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/dashboard",
+            "description": "Client role only. Array0=user, Array1=stats, Array2=recent. Frontend: ClientDashboardScreen (/dashboard)."
+          }
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/documents/{{fileId}}/download",
+            "description": "Returns base64 in data.Array0.FileBase64. Frontend: HistoryScreen download."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "description": "SuperAdmin only. Frontend: ReportsScreen (/admin/reports).",
+      "item": [
+        {
+          "name": "Daily Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/daily?fromDate=2026-06-01&toDate=2026-06-25",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "daily"],
+              "query": [
+                { "key": "fromDate", "value": "2026-06-01" },
+                { "key": "toDate", "value": "2026-06-25" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Monthly Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/monthly?year=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "monthly"],
+              "query": [{ "key": "year", "value": "2026" }]
+            }
+          }
+        },
+        {
+          "name": "User-wise Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/user-wise?fromDate=2026-01-01&toDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "user-wise"],
+              "query": [
+                { "key": "fromDate", "value": "2026-01-01" },
+                { "key": "toDate", "value": "2026-12-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Category-wise Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/category-wise?fromDate=2026-01-01&toDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "category-wise"],
+              "query": [
+                { "key": "fromDate", "value": "2026-01-01" },
+                { "key": "toDate", "value": "2026-12-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/audit-logs?fromDate=2026-06-01&toDate=2026-06-25&userId=",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "audit-logs"],
+              "query": [
+                { "key": "fromDate", "value": "2026-06-01" },
+                { "key": "toDate", "value": "2026-06-25" },
+                { "key": "userId", "value": "" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

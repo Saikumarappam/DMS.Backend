@@ -1,10 +1,11 @@
-using System.Data;
 using DMS.API.Helpers;
 using DMS.Application.DTOs.Common;
 using DMS.Application.DTOs.Documents;
 using DMS.Application.Interfaces;
 using DMS.Domain.Entities;
 using Newtonsoft.Json;
+using System.Collections.Specialized;
+using System.Data;
 
 namespace DMS.Application.Services;
 
@@ -33,8 +34,7 @@ public class DocumentService
         _spResponse = spResponse;
     }
 
-    public async Task<Response> UploadAsync(
-        long clientId, int categoryId, string source, Stream fileStream, string originalName)
+    public async Task<Response> UploadAsync(long clientId, int categoryId, string source, Stream fileStream, string originalName)
     {
         var paramsJson = await _commonFunctions.StringParamsToJson(clientId, categoryId, originalName);
         try
@@ -42,7 +42,7 @@ public class DocumentService
             var extension = Path.GetExtension(originalName).ToLowerInvariant();
             if (!_fileStorage.IsAllowedExtension(extension))
             {
-                var resp = ResponseHelper.Validation("File type not allowed. Supported: JPG, JPEG, PNG, PDF.");
+                var resp = ResponseHelper.Validation(_fileStorage.GetAllowedExtensionsErrorMessage());
                 _commonFunctions.LogEvent("DocumentService.cs", "UploadAsync", paramsJson, resp.message, 0, clientId.ToString());
                 return resp;
             }
@@ -53,7 +53,7 @@ public class DocumentService
 
             if (!_fileStorage.IsAllowedSize(fileBytes.Length))
             {
-                var resp = ResponseHelper.Validation("File size must be between 500KB and 5MB.");
+                var resp = ResponseHelper.Validation(_fileStorage.GetFileSizeErrorMessage());
                 _commonFunctions.LogEvent("DocumentService.cs", "UploadAsync", paramsJson, resp.message, 0, clientId.ToString());
                 return resp;
             }
@@ -76,17 +76,26 @@ public class DocumentService
             var result = await _spResponse.FromCommandDataSetAsync(ds, "Document uploaded successfully.");
             if (result.status)
             {
-                result.jsonstring = JsonConvert.SerializeObject(new
-                {
-                    fileId = result.jsonstring,
-                    fileName = storedName,
-                    originalFileName = originalName,
-                    fileExtension = extension,
-                    fileSize = fileBytes.Length,
-                    contentType = _fileStorage.GetContentType(extension),
-                    fileBase64
-                });
+                result.data = new ListDictionary
+                 {
+                     {
+                         "Array0",
+                         new[]
+                         {
+                             new
+                             {
+                                 fileId = result.jsonstring,
+                                 fileName = storedName,
+                                 originalFileName = originalName,
+                                 fileExtension = extension,
+                                 fileSize = fileBytes.Length,
+                                 contentType = _fileStorage.GetContentType(extension),
+                             }
+                         }
+                     }
+                 };
             }
+
 
             _commonFunctions.LogEvent("DocumentService.cs", "UploadAsync", paramsJson, result.message, result.status ? 0 : 1, clientId.ToString());
             return result;
@@ -119,21 +128,41 @@ public class DocumentService
     public async Task<Response> GetDashboardAsync(long clientId)
     {
         var paramsJson = await _commonFunctions.StringParamsToJson(clientId);
+
         try
         {
             var statsDs = await _documentRepo.GetDashboardStatsDataSetAsync(clientId);
             var userDs = await _userRepo.GetByIdDataSetAsync(clientId);
 
             var combined = new DataSet();
-            if (userDs.Tables.Count > 0)
-                combined.Tables.Add(userDs.Tables[0].Copy());
-            if (statsDs.Tables.Count > 0)
-                combined.Tables.Add(statsDs.Tables[0].Copy());
-            if (statsDs.Tables.Count > 1)
-                combined.Tables.Add(statsDs.Tables[1].Copy());
+            int tableIndex = 0;
+
+            // Add all user tables
+            if (userDs != null)
+            {
+                foreach (DataTable table in userDs.Tables)
+                {
+                    var dt = table.Copy();
+                    dt.TableName = $"Array{tableIndex++}";
+                    combined.Tables.Add(dt);
+                }
+            }
+
+            // Add all dashboard tables
+            if (statsDs != null)
+            {
+                foreach (DataTable table in statsDs.Tables)
+                {
+                    var dt = table.Copy();
+                    dt.TableName = $"Array{tableIndex++}";
+                    combined.Tables.Add(dt);
+                }
+            }
 
             var resp = await _spResponse.FromDataSetAsync(combined, "Success", "No dashboard data found.");
+
             _commonFunctions.LogEvent("DocumentService.cs", "GetDashboardAsync", paramsJson, resp.message, 0, clientId.ToString());
+
             return resp;
         }
         catch (Exception ex)
@@ -189,17 +218,36 @@ public class DocumentService
             }
 
             var resp = ResponseHelper.Success("Document retrieved successfully.");
-            resp.jsonstring = JsonConvert.SerializeObject(new
-            {
-                fileId = doc.FileId,
-                fileName = doc.FileName,
-                originalFileName = doc.OriginalFileName,
-                fileExtension = doc.FileExtension,
-                fileSize = doc.FileSize,
-                contentType = _fileStorage.GetContentType(doc.FileExtension),
-                fileBase64
-            });
+            //resp.jsonstring = JsonConvert.SerializeObject(new
+            //{
+            //    fileId = doc.FileId,
+            //    fileName = doc.FileName,
+            //    originalFileName = doc.OriginalFileName,
+            //    fileExtension = doc.FileExtension,
+            //    fileSize = doc.FileSize,
+            //    contentType = _fileStorage.GetContentType(doc.FileExtension),
+            //    fileBase64
+            //});
 
+            resp.data = new ListDictionary
+                 {
+                     {
+                         "Array0",
+                         new[]
+                         {
+                             new
+                             {
+                                 FileId = doc.FileId,
+                                 FileName = doc.FileName,
+                                 OriginalFileName = doc.OriginalFileName,
+                                 FileExtension = doc.FileExtension,
+                                 FileSize = doc.FileSize,
+                                 ContentType = _fileStorage.GetContentType(doc.FileExtension),
+                                 FileBase64 = fileBase64
+                             }
+                         }
+                     }
+                 };
             _commonFunctions.LogEvent("DocumentService.cs", "DownloadAsync", paramsJson, resp.message, 0, fileId.ToString());
             return resp;
         }

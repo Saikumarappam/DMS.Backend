@@ -49,6 +49,7 @@ public class SmtpEmailSender
         await client.ConnectAsync(host, port, enableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
         if (!string.IsNullOrWhiteSpace(smtpUser))
             await client.AuthenticateAsync(smtpUser, smtpPassword);
+        _logger.LogInformation(htmlBody);
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);

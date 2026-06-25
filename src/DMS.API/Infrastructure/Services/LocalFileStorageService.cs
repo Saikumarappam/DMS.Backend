@@ -6,15 +6,34 @@ namespace DMS.Infrastructure.Services;
 public class LocalFileStorageService : IFileStorageService
 {
     private readonly string _basePath;
-    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf" };
-    private const long MinSize = 500 * 1024;
-    private const long MaxSize = 5 * 1024 * 1024;
+    private readonly string[] _allowedExtensions;
+
+    public IReadOnlyList<string> AllowedExtensions => _allowedExtensions;
+    public long MinSizeBytes { get; }
+    public long MaxSizeBytes { get; }
 
     public LocalFileStorageService(IConfiguration configuration)
     {
         _basePath = configuration["FileStorage:BasePath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "uploads");
         if (!Directory.Exists(_basePath))
             Directory.CreateDirectory(_basePath);
+
+        _allowedExtensions = configuration
+            .GetSection("FileStorage:AllowedExtensions")
+            .Get<string[]>()
+            ?.Select(NormalizeExtension)
+            .Where(e => !string.IsNullOrEmpty(e))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray() ?? [];
+
+        if (_allowedExtensions.Length == 0)
+            throw new InvalidOperationException("FileStorage:AllowedExtensions must contain at least one extension.");
+
+        MinSizeBytes = configuration.GetValue<long>("FileStorage:MinSizeBytes");
+        MaxSizeBytes = configuration.GetValue<long>("FileStorage:MaxSizeBytes");
+
+        if (MinSizeBytes <= 0 || MaxSizeBytes <= 0 || MinSizeBytes > MaxSizeBytes)
+            throw new InvalidOperationException("FileStorage:MinSizeBytes and FileStorage:MaxSizeBytes must be positive and MinSizeBytes must not exceed MaxSizeBytes.");
     }
 
     public async Task<(string storedName, string filePath)> SaveFileAsync(byte[] content, string originalName, long clientId)
@@ -50,7 +69,27 @@ public class LocalFileStorageService : IFileStorageService
         };
 
     public bool IsAllowedExtension(string extension) =>
-        AllowedExtensions.Contains(extension.ToLowerInvariant());
+        _allowedExtensions.Contains(NormalizeExtension(extension), StringComparer.OrdinalIgnoreCase);
 
-    public bool IsAllowedSize(long size) => size >= MinSize && size <= MaxSize;
+    public bool IsAllowedSize(long size) => size >= MinSizeBytes && size <= MaxSizeBytes;
+
+    public string GetAllowedExtensionsErrorMessage() =>
+        $"File type not allowed. Supported: {string.Join(", ", _allowedExtensions.Select(e => e.TrimStart('.').ToUpperInvariant()))}.";
+
+    public string GetFileSizeErrorMessage() =>
+        $"File size must be between {FormatSize(MinSizeBytes)} and {FormatSize(MaxSizeBytes)}.";
+
+    private static string NormalizeExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+            return string.Empty;
+
+        var trimmed = extension.Trim().ToLowerInvariant();
+        return trimmed.StartsWith('.') ? trimmed : $".{trimmed}";
+    }
+
+    private static string FormatSize(long bytes) =>
+        bytes >= 1024 * 1024
+            ? $"{bytes / (1024.0 * 1024.0):0.#}MB"
+            : $"{bytes / 1024.0:0.#}KB";
 }
