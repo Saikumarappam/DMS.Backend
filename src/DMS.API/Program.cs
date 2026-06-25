@@ -127,15 +127,23 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
 });
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(int.Parse(port));
+});
+
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DMS API v1"));
-}
+//if (app.Environment.IsDevelopment())
+//{
+
+//}
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DMS API v1"));
 
 app.UseHttpsRedirection();
 app.UseHsts();
