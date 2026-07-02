@@ -130,7 +130,7 @@ public interface IFileStorageService
     IReadOnlyList<string> AllowedExtensions { get; }
     long MinSizeBytes { get; }
     long MaxSizeBytes { get; }
-    Task<(string storedName, string filePath)> SaveFileAsync(byte[] content, string originalName, long clientId);
+    Task<(string storedName, string filePath)> SaveFileAsync(byte[] content, string originalName, long clientId, string categoryName);
     Task<(Stream stream, string contentType)?> TryGetFileAsync(string filePath);
     string GetContentType(string extension);
     bool IsAllowedExtension(string extension);

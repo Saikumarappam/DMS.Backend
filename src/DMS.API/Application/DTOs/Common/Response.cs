@@ -11,8 +11,14 @@ public class Response
     public string jsonstring { get; set; } = "";
 }
 
-public class TokenResponse : Response
+public class TokenResponse
 {
+    public bool status { get; set; }
+    public string statuscode { get; set; } = "";
+    public string message { get; set; } = "";
+    public ListDictionary? data { get; set; }
+    public string jsonstring { get; set; } = "";
+
     public string token { get; set; } = "";
     public string refreshToken { get; set; } = "";
     public DateTime expiresAt { get; set; }

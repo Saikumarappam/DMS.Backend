@@ -68,7 +68,7 @@ public class DocumentService
             }
 
             var fileBase64 = Convert.ToBase64String(fileBytes);
-            var (storedName, filePath) = await _fileStorage.SaveFileAsync(fileBytes, originalName, clientId);
+            var (storedName, filePath) = await _fileStorage.SaveFileAsync(fileBytes, originalName, clientId, category.CategoryName);
             var ds = await _documentRepo.UploadDataSetAsync(
                 clientId, categoryId, category.CategoryName, storedName, originalName,
                 filePath, extension, fileBytes.Length, source, clientId, fileBase64);

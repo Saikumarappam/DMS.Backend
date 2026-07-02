@@ -36,17 +36,33 @@ public class LocalFileStorageService : IFileStorageService
             throw new InvalidOperationException("FileStorage:MinSizeBytes and FileStorage:MaxSizeBytes must be positive and MinSizeBytes must not exceed MaxSizeBytes.");
     }
 
-    public async Task<(string storedName, string filePath)> SaveFileAsync(byte[] content, string originalName, long clientId)
-    {
-        var dateFolder = DateTime.UtcNow.ToString("yyyyMMdd");
-        var folder = Path.Combine(_basePath, clientId.ToString(), dateFolder);
-        Directory.CreateDirectory(folder);
 
-        var storedName = $"{Guid.NewGuid():N}{Path.GetExtension(originalName)}";
-        var fullPath = Path.Combine(folder, storedName);
+    public async Task<(string storedName, string filePath)> SaveFileAsync(byte[] content,string fileName,long clientId,string categoryName)
+    {
+        var now = DateTime.UtcNow;
+
+        var safeCategory = string.Concat(categoryName.Split(Path.GetInvalidFileNameChars()));
+
+        var folder = Path.Combine(
+            clientId.ToString(),
+            safeCategory,
+            now.Year.ToString(),
+            now.Month.ToString("00"),
+            now.Day.ToString("00"));
+
+        var physicalFolder = Path.Combine(_basePath, folder);
+
+        Directory.CreateDirectory(physicalFolder);
+
+        var extension = Path.GetExtension(fileName);
+
+        var storedName = $"{Guid.NewGuid():N}{extension}";
+
+        var fullPath = Path.Combine(physicalFolder, storedName);
+
         await File.WriteAllBytesAsync(fullPath, content);
 
-        return (storedName, fullPath);
+        return (storedName, Path.Combine(folder, storedName));
     }
 
     public Task<(Stream stream, string contentType)?> TryGetFileAsync(string filePath)
@@ -71,13 +87,13 @@ public class LocalFileStorageService : IFileStorageService
     public bool IsAllowedExtension(string extension) =>
         _allowedExtensions.Contains(NormalizeExtension(extension), StringComparer.OrdinalIgnoreCase);
 
-    public bool IsAllowedSize(long size) => size >= MinSizeBytes && size <= MaxSizeBytes;
+    public bool IsAllowedSize(long size) => size >= 0 && size <= MaxSizeBytes;
 
     public string GetAllowedExtensionsErrorMessage() =>
         $"File type not allowed. Supported: {string.Join(", ", _allowedExtensions.Select(e => e.TrimStart('.').ToUpperInvariant()))}.";
 
     public string GetFileSizeErrorMessage() =>
-        $"File size must be between {FormatSize(MinSizeBytes)} and {FormatSize(MaxSizeBytes)}.";
+     $"The uploaded file exceeds the maximum allowed size of {FormatSize(MaxSizeBytes)}.";
 
     private static string NormalizeExtension(string extension)
     {

@@ -127,12 +127,7 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
 });
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
 
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(int.Parse(port));
-});
 
 var app = builder.Build();
 
