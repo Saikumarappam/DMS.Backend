@@ -24,9 +24,18 @@ public class SpResponseBuilder
             return await FromDataSetAsync(ds);
 
         var (code, message, recordId) = ParseCommandResult(ds);
-        var resp = FromSpResult(code, string.IsNullOrWhiteSpace(message)
+        var spResult = FromSpResult(code, string.IsNullOrWhiteSpace(message)
             ? (code == 0 ? "Success" : "Operation failed.")
             : message);
+
+        var resp = new Response
+        {
+            status = spResult.status,
+            statuscode = spResult.statuscode,
+            message = spResult.message,
+            jsonstring = spResult.jsonstring,
+            data = spResult.data
+        };
 
         if (code == 0)
         {
@@ -121,12 +130,12 @@ public class SpResponseBuilder
             expiresAt = expiresAt.ToUniversalTime()
         };
     }
-    public TokenResponse FromSpResult(int resultCode, string message, string? token = null) =>
-        new()
+    public Response FromSpResult(int resultCode, string message, string? token = null) =>
+        new Response
         {
             status = resultCode == 0,
             statuscode = ResponseHelper.MapStatusCode(resultCode, message),
-            message = message,
-            token = token ?? ""
+            message = message
+            // do not set token unless Response has that property
         };
 }

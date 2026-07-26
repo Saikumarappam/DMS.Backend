@@ -461,7 +461,7 @@ public class AuthService
         return new string(chars);
     }
 
-    private async Task<Response> BuildAuthResponse(User user, string? ip, string message = "Login successful.")
+    private async Task<TokenResponse> BuildAuthResponse(User user, string? ip, string message = "Login successful.")
     {
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();

@@ -101,4 +101,26 @@ public class ReportService
             return ResponseHelper.InternalErrorResponse();
         }
     }
+
+    /// <summary>
+    /// Dynamic admin dashboard data: all DataTables from sp_Dashboard_GetAdminData are automatically
+    /// converted to Array0 (KPI), Array1 (category chart), Array2 (trend), Array3 (top clients), etc.
+    /// Future-proof: any new DataTables added to the SP will automatically be returned as Array4, Array5, etc.
+    /// </summary>
+    public async Task<Response> GetAdminDashboardAsync()
+    {
+        var paramsJson = "{}";
+        try
+        {
+            var ds = await _reportRepo.GetAdminDashboardDataSetAsync();
+            var resp = await _spResponse.FromDataSetAsync(ds, "Dashboard data retrieved successfully");
+            _commonFunctions.LogEvent("ReportService.cs", "GetAdminDashboardAsync", paramsJson, resp.message, 0, "");
+            return resp;
+        }
+        catch (Exception ex)
+        {
+            _commonFunctions.LogEvent("ReportService.cs", "GetAdminDashboardAsync", paramsJson, ex.ToString(), 1, "");
+            return ResponseHelper.InternalErrorResponse();
+        }
+    }
 }

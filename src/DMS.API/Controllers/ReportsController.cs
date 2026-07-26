@@ -61,4 +61,14 @@ public class ReportsController : ApiControllerBase
     public Task<Response> AuditLogs(
         [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] long? userId) =>
         _reportService.GetAuditLogsAsync(fromDate, toDate, userId, _auditRepo);
+
+    /// <summary>
+    /// Admin dashboard with dynamic multi-table data (KPI cards, charts, tables).
+    /// </summary>
+    /// <remarks>Frontend: <c>AdminDashboardScreen</c> (/admin/dashboard)</remarks>
+    [HttpGet("admin-dashboard")]
+    [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public Task<Response> AdminDashboard() =>
+        _reportService.GetAdminDashboardAsync();
 }

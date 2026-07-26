@@ -564,6 +564,91 @@ END
 GO
 
 -- =============================================================================
+-- sp_Dashboard_GetAdminData
+-- Returns 4 datasets for admin dashboard: KPI stats, documents by category, documents trend, top clients
+-- Future-proof: Any new DataTable added to this SP will automatically be returned as Array3, Array4, etc.
+-- =============================================================================
+IF OBJECT_ID('dbo.sp_Dashboard_GetAdminData', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_Dashboard_GetAdminData;
+GO
+CREATE PROCEDURE dbo.sp_Dashboard_GetAdminData
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Array0: KPI Stats (cards)
+    SELECT 
+        'Total Documents' AS Label,
+        COUNT(f.FileId) AS Value,
+        'documents' AS Type
+    FROM dbo.FileDetails f
+    WHERE f.IsActive = 1
+
+    UNION ALL
+
+    SELECT 
+        'Pending Tasks',
+        COUNT(t.TaskId),
+        'tasks'
+    FROM dbo.Tasks t
+    WHERE t.Status IN ('Pending', 'In Progress')
+
+    UNION ALL
+
+    SELECT 
+        'Total Users',
+        COUNT(DISTINCT u.UserId),
+        'users'
+    FROM dbo.Users u
+    WHERE u.IsActive = 1
+
+    UNION ALL
+
+    SELECT 
+        'Total Categories',
+        COUNT(c.CategoryId),
+        'categories'
+    FROM dbo.FileCategories c;
+
+    -- Array1: Documents by Category (chart data)
+    SELECT 
+        c.CategoryName,
+        COUNT(f.FileId) AS DocumentCount,
+        SUM(f.FileSize) AS TotalSize,
+        ROUND(CAST(COUNT(f.FileId) AS FLOAT) * 100 / (SELECT COUNT(*) FROM dbo.FileDetails WHERE IsActive = 1), 2) AS Percentage
+    FROM dbo.FileCategories c
+    LEFT JOIN dbo.FileDetails f ON c.CategoryId = f.CategoryId AND f.IsActive = 1
+    GROUP BY c.CategoryId, c.CategoryName
+    ORDER BY DocumentCount DESC;
+
+    -- Array2: Documents Upload Trend (chart data - last 30 days)
+    SELECT 
+        CONVERT(DATE, f.UploadDate) AS UploadDate,
+        COUNT(f.FileId) AS DocumentCount,
+        SUM(f.FileSize) AS TotalSize
+    FROM dbo.FileDetails f
+    WHERE f.IsActive = 1 AND f.UploadDate >= DATEADD(DAY, -30, GETDATE())
+    GROUP BY CONVERT(DATE, f.UploadDate)
+    ORDER BY UploadDate DESC;
+
+    -- Array3: Top Clients with Task Counts (table data)
+    SELECT TOP 10
+        u.UserId,
+        u.Name AS ClientName,
+        ISNULL(b.BusinessName, 'N/A') AS BusinessName,
+        COUNT(DISTINCT f.FileId) AS DocumentCount,
+        COUNT(DISTINCT t.TaskId) AS TaskCount,
+        COUNT(CASE WHEN t.Status = 'Completed' THEN 1 END) AS CompletedTasks
+    FROM dbo.Users u
+    LEFT JOIN dbo.FileDetails f ON u.UserId = f.UploadedBy AND f.IsActive = 1
+    LEFT JOIN dbo.Tasks t ON u.UserId = t.AssignedToUserId
+    LEFT JOIN dbo.Businesses b ON u.BusinessId = b.BusinessId
+    WHERE u.IsActive = 1
+    GROUP BY u.UserId, u.Name, b.BusinessName
+    ORDER BY DocumentCount DESC;
+END
+GO
+
+-- =============================================================================
 -- sp_AuditLog_Get
 -- =============================================================================
 IF OBJECT_ID('dbo.sp_AuditLog_Get', 'P') IS NOT NULL DROP PROCEDURE dbo.sp_AuditLog_Get;

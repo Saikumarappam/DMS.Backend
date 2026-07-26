@@ -70,6 +70,7 @@ public interface IReportRepository
     Task<DataSet> GetMonthlyUploadsDataSetAsync(int year);
     Task<DataSet> GetUserWiseDataSetAsync(DateTime? from, DateTime? to);
     Task<DataSet> GetCategoryWiseDataSetAsync(DateTime? from, DateTime? to);
+    Task<DataSet> GetAdminDashboardDataSetAsync();
 
     Task<List<ReportItem>> GetDailyUploadsAsync(DateTime from, DateTime to);
     Task<List<ReportItem>> GetMonthlyUploadsAsync(int year);

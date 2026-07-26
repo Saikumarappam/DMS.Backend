@@ -64,7 +64,7 @@ public class UserService
 
     public async Task<Response> ApproveRejectAsync(long userId, UserApprovalRequest request, long actionBy)
     {
-        var paramsJson = await _commonFunctions.StringParamsToJson(userId, request.Action);
+        var paramsJson = await _commonFunctions.StringParamsToJson(userId, request.Action, request.Comments);
         try
         {
             var validationErrors = ValidationRules.ValidateApproval(request.Action);

@@ -22,6 +22,9 @@ public class ReportRepository : SqlRepositoryBase, IReportRepository
     public Task<DataSet> GetCategoryWiseDataSetAsync(DateTime? from, DateTime? to) =>
         FetchSpDatasetAsync("sp_Report_CategoryWise", DbValue(from), DbValue(to));
 
+    public Task<DataSet> GetAdminDashboardDataSetAsync() =>
+        FetchSpDatasetAsync("Dashboard_GetAdminData");
+
     public async Task<List<ReportItem>> GetDailyUploadsAsync(DateTime from, DateTime to)
     {
         var ds = await GetDailyUploadsDataSetAsync(from, to);
