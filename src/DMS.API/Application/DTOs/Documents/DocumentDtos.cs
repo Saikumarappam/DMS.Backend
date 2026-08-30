@@ -30,7 +30,10 @@ public class DocumentHistoryFilter
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
     public string? SearchFileName { get; set; }
+    public string? Status { get; set; }
 }
+
+
 
 public class DashboardDto
 {

@@ -83,4 +83,21 @@ public class DocumentsController : ApiControllerBase
     [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Response), StatusCodes.Status404NotFound)]
     public Task<Response> Download(long id) => _documentService.DownloadAsync(id);
+
+    [HttpGet("documentFilterOptions")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<Response> GetDocumentFilterOptions([FromQuery] string? type = null)
+    {
+        if (User.IsInRole("Client"))
+        {
+            if (!TryGetCurrentUserId(out var userId, out var error))
+                return error!;
+
+            return await _documentService.GetDocumentFilterOptionsAsync(type,userId);
+        }
+
+        return await _documentService.GetDocumentFilterOptionsAsync(type,null);
+    }
 }

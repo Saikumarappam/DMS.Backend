@@ -1,4 +1,5 @@
 using System.Data;
+using DMS.Application.DTOs.Documents;
 using DMS.Domain.Entities;
 
 namespace DMS.Application.Interfaces;
@@ -46,7 +47,8 @@ public interface ICategoryRepository
 
 public interface IDocumentRepository
 {
-    Task<DataSet> GetHistoryDataSetAsync(long? clientId, int? categoryId, DateTime? from, DateTime? to, string? search);
+    Task<DataSet> GetHistoryDataSetAsync(long? clientId, int? categoryId, DateTime? from, DateTime? to, string? search, string? status);
+    Task<DataSet> GetDocumentFilterOptionsAsync(string? type, long? userId);
     Task<DataSet> GetByIdDataSetAsync(long fileId);
     Task<DataSet> GetDashboardStatsDataSetAsync(long clientId);
 

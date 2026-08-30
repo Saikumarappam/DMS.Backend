@@ -16,9 +16,11 @@ public class DocumentRepository : SqlRepositoryBase, IDocumentRepository
         FetchSpDatasetAsync("sp_Document_Upload",
             clientId, categoryId, categoryName, fileName, originalName, filePath, extension, fileSize, source, createdBy, DbValue(fileBase64));
 
-    public Task<DataSet> GetHistoryDataSetAsync(long? clientId, int? categoryId, DateTime? from, DateTime? to, string? search) =>
-        FetchSpDatasetAsync("sp_Document_GetHistory",
-            DbValue(clientId), DbValue(categoryId), DbValue(from), DbValue(to), DbValue(search));
+    public Task<DataSet> GetHistoryDataSetAsync(long? clientId, int? categoryId, DateTime? from, DateTime? to, string? search, string? status) =>
+        FetchSpDatasetAsync("sp_Document_GetHistory", DbValue(clientId), DbValue(categoryId), DbValue(from), DbValue(to), DbValue(search), DbValue(status));
+
+    public Task<DataSet> GetDocumentFilterOptionsAsync(string? status, long? clientId) =>
+       FetchSpDatasetAsync("Document_GetFilterOptions", DbValue(status));
 
     public Task<DataSet> GetByIdDataSetAsync(long fileId) =>
         FetchSpDatasetAsync("sp_Document_GetById", fileId);

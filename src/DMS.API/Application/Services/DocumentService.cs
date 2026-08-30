@@ -113,7 +113,7 @@ public class DocumentService
         try
         {
             var ds = await _documentRepo.GetHistoryDataSetAsync(
-                filter.ClientId, filter.CategoryId, filter.FromDate, filter.ToDate, filter.SearchFileName);
+                filter.ClientId, filter.CategoryId, filter.FromDate, filter.ToDate, filter.SearchFileName, filter.Status);
             var resp = await _spResponse.FromDataSetAsync(ds);
             _commonFunctions.LogEvent("DocumentService.cs", "GetHistoryAsync", paramsJson, resp.message, 0, filter.ClientId?.ToString() ?? "");
             return resp;
@@ -121,6 +121,37 @@ public class DocumentService
         catch (Exception ex)
         {
             _commonFunctions.LogEvent("DocumentService.cs", "GetHistoryAsync", paramsJson, ex.ToString(), 1, filter.ClientId?.ToString() ?? "");
+            return ResponseHelper.InternalErrorResponse();
+        }
+    }
+    public async Task<Response> GetDocumentFilterOptionsAsync(string? type, long? userId)
+    {
+        var paramsJson = await _commonFunctions.StringParamsToJson(type ?? "");
+
+        try
+        {
+            var ds = await _documentRepo.GetDocumentFilterOptionsAsync(type, userId);
+
+            var resp = await _spResponse.FromDataSetAsync(ds);
+
+            _commonFunctions.LogEvent(
+                "DocumentService.cs",
+                "GetDocumentFilterOptionsAsync",
+                paramsJson,
+                resp.message,
+                0, userId?.ToString() ?? "");
+
+            return resp;
+        }
+        catch (Exception ex)
+        {
+            _commonFunctions.LogEvent(
+                "DocumentService.cs",
+                "GetDocumentFilterOptionsAsync",
+                paramsJson,
+                ex.ToString(),
+                1, userId?.ToString() ?? "");
+
             return ResponseHelper.InternalErrorResponse();
         }
     }

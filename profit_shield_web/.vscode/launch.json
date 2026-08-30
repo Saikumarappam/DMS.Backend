@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter Web (local API)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "-d",
+        "chrome",
+        "--dart-define=API_BASE_URL=http://localhost:5000/api/v1"
+      ]
+    },
+    {
+      "name": "Flutter Web (UAT API)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "-d",
+        "chrome",
+        "--dart-define=API_BASE_URL=https://profitshield.profygen.com/api/v1"
+      ]
+    }
+  ]
+}
