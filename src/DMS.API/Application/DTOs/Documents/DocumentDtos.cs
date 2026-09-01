@@ -44,3 +44,14 @@ public class DashboardDto
     public int ApprovedDocuments { get; set; }
     public List<DocumentDto> RecentUploads { get; set; } = new();
 }
+
+
+public class DocumentUpdateStatusRequest
+{
+    public long FileId { get; set; }
+
+    public string Status { get; set; } = string.Empty;
+
+    public string? Remarks { get; set; }
+
+}

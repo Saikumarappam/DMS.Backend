@@ -53,10 +53,7 @@ public class SpResponseBuilder
         return resp;
     }
 
-    public async Task<Response> FromDataSetAsync(
-        DataSet ds,
-        string successMessage = "Success",
-        string noDataMessage = "No Data Found")
+    public async Task<Response> FromDataSetAsync(DataSet ds,string successMessage = "Success",string noDataMessage = "No Data Found")
     {
         var resp = new Response();
 

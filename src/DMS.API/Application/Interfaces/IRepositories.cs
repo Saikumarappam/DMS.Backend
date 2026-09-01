@@ -57,6 +57,8 @@ public interface IDocumentRepository
         string filePath, string extension, long fileSize, string source, long createdBy, string? fileBase64 = null);
 
     Task<FileDetail?> GetByIdAsync(long fileId);
+
+    Task<DataSet> UpdateDocumentStatusAsync(DocumentUpdateStatusRequest request,long userId);
 }
 
 public interface IRefreshTokenRepository

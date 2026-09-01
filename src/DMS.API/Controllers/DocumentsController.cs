@@ -100,4 +100,18 @@ public class DocumentsController : ApiControllerBase
 
         return await _documentService.GetDocumentFilterOptionsAsync(type,null);
     }
+
+
+    [HttpPut("document/status")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Response), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<Response> UpdateDocumentStatus([FromBody] DocumentUpdateStatusRequest request)
+    {
+        if (!TryGetCurrentUserId(out var userId, out var error))
+            return error!;
+
+        return await _documentService.UpdateDocumentStatusAsync( request,userId);
+    }
 }

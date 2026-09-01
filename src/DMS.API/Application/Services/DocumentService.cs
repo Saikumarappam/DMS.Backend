@@ -6,6 +6,7 @@ using DMS.Domain.Entities;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
 using System.Data;
+using System.Net.NetworkInformation;
 
 namespace DMS.Application.Services;
 
@@ -285,6 +286,98 @@ public class DocumentService
         catch (Exception ex)
         {
             _commonFunctions.LogEvent("DocumentService.cs", "DownloadAsync", paramsJson, ex.ToString(), 1, fileId.ToString());
+            return ResponseHelper.InternalErrorResponse();
+        }
+    }
+
+    public async Task<Response> UpdateDocumentStatusAsync(DocumentUpdateStatusRequest request, long userId)
+    {
+        var paramsJson = await _commonFunctions.StringParamsToJson(JsonConvert.SerializeObject(request));
+
+        try
+        {
+            var ds = await _documentRepo.UpdateDocumentStatusAsync(request, userId);
+
+            var resp = await _spResponse.FromDataSetAsync(ds);
+
+            if (!resp.status)
+            {
+                return resp;
+            }
+
+            if (request.Status.Equals("Deleted", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var table = ds?.Tables.Count > 0 ? ds.Tables[0]: null;
+
+                    if (table != null && table.Rows.Count > 0)
+                    {
+                        var row = table.Rows[0];
+
+                        int permanentDelete = 0;
+                        string? filePath = null;
+
+                        if (table.Columns.Contains("PermanentDelete"))
+                        {
+                            var value = row["PermanentDelete"];
+
+                            if (value != null && value != DBNull.Value)
+                            {
+                                _ = int.TryParse(Convert.ToString(value),out permanentDelete);
+                            }
+                        }
+
+                        if (table.Columns.Contains("FilePath"))
+                        {
+                            var value = row["FilePath"];
+
+                            if (value != null && value != DBNull.Value)
+                            {
+                                filePath = Convert.ToString(value);
+                            }
+                        }
+
+                        if (permanentDelete == 1 && !string.IsNullOrWhiteSpace(filePath))
+                        {
+                            try
+                            {
+                                if (File.Exists(filePath))
+                                {
+                                    File.Delete(filePath);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _commonFunctions.LogEvent(
+                                    "DocumentService.cs",
+                                    "PhysicalFileDelete",
+                                    filePath,
+                                    ex.ToString(),
+                                    1,
+                                    userId.ToString());
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    
+                    _commonFunctions.LogEvent(
+                        "DocumentService.cs",
+                        "DeleteResponseProcessing",
+                        paramsJson,
+                        ex.ToString(),
+                        1,
+                        userId.ToString());
+                }
+            }
+
+            return resp;
+        }
+        catch (Exception ex)
+        {
+            _commonFunctions.LogEvent("DocumentService.cs", "UpdateDocumentStatusAsync", paramsJson, ex.ToString(), 1, userId.ToString());
             return ResponseHelper.InternalErrorResponse();
         }
     }

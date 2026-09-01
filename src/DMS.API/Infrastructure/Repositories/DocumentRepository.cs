@@ -1,8 +1,9 @@
-using System.Data;
 using DMS.Application.Common;
+using DMS.Application.DTOs.Documents;
 using DMS.Application.Interfaces;
 using DMS.Domain.Entities;
 using Microsoft.Extensions.Configuration;
+using System.Data;
 
 namespace DMS.Infrastructure.Repositories;
 
@@ -17,7 +18,7 @@ public class DocumentRepository : SqlRepositoryBase, IDocumentRepository
             clientId, categoryId, categoryName, fileName, originalName, filePath, extension, fileSize, source, createdBy, DbValue(fileBase64));
 
     public Task<DataSet> GetHistoryDataSetAsync(long? clientId, int? categoryId, DateTime? from, DateTime? to, string? search, string? status) =>
-        FetchSpDatasetAsync("sp_Document_GetHistory", DbValue(clientId), DbValue(categoryId), DbValue(from), DbValue(to), DbValue(search), DbValue(status));
+        FetchSpDatasetAsync("Document_GetHistory", DbValue(clientId), DbValue(categoryId), DbValue(from), DbValue(to), DbValue(search), DbValue(status));
 
     public Task<DataSet> GetDocumentFilterOptionsAsync(string? status, long? clientId) =>
        FetchSpDatasetAsync("Document_GetFilterOptions", DbValue(status));
@@ -33,4 +34,7 @@ public class DocumentRepository : SqlRepositoryBase, IDocumentRepository
         var ds = await GetByIdDataSetAsync(fileId);
         return SpDataSetReader.MapFirstOrDefault<FileDetail>(ds);
     }
+
+    public Task<DataSet> UpdateDocumentStatusAsync(DocumentUpdateStatusRequest request, long userId) =>
+       FetchSpDatasetAsync("Document_GetFilterOptions", request.FileId, request.Status, DbValue(userId), DbValue(request.Remarks));
 }

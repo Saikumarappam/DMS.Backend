@@ -37,11 +37,41 @@ public class LocalFileStorageService : IFileStorageService
     }
 
 
-    public async Task<(string storedName, string filePath)> SaveFileAsync(byte[] content,string fileName,long clientId,string categoryName)
+    //public async Task<(string storedName, string filePath)> SaveFileAsync(byte[] content, string fileName, long clientId, string categoryName)
+    //{
+    //    var now = DateTime.UtcNow;
+
+    //    var safeCategory = string.Concat(categoryName.Split(Path.GetInvalidFileNameChars()));
+
+    //    var folder = Path.Combine(
+    //        clientId.ToString(),
+    //        safeCategory,
+    //        now.Year.ToString(),
+    //        now.Month.ToString("00"),
+    //        now.Day.ToString("00"));
+
+    //    var physicalFolder = Path.Combine(_basePath, folder);
+
+    //    Directory.CreateDirectory(physicalFolder);
+
+    //    var extension = Path.GetExtension(fileName);
+
+    //    var storedName = $"{Guid.NewGuid():N}{extension}";
+
+    //    var fullPath = Path.Combine(physicalFolder, storedName);
+
+    //    await File.WriteAllBytesAsync(fullPath, content);
+
+    //    return (storedName, Path.Combine(folder, storedName));
+    //}
+
+
+    public async Task<(string storedName, string filePath)> SaveFileAsync(byte[] content, string fileName, long clientId, string categoryName)
     {
         var now = DateTime.UtcNow;
 
-        var safeCategory = string.Concat(categoryName.Split(Path.GetInvalidFileNameChars()));
+        var safeCategory = string.Concat(
+            categoryName.Split(Path.GetInvalidFileNameChars()));
 
         var folder = Path.Combine(
             clientId.ToString(),
@@ -58,13 +88,15 @@ public class LocalFileStorageService : IFileStorageService
 
         var storedName = $"{Guid.NewGuid():N}{extension}";
 
-        var fullPath = Path.Combine(physicalFolder, storedName);
+        var fullPath = Path.Combine(
+            physicalFolder,
+            fileName);
 
         await File.WriteAllBytesAsync(fullPath, content);
 
-        return (storedName, Path.Combine(folder, storedName));
+        // Store complete physical path
+        return (storedName, fullPath);
     }
-
     public Task<(Stream stream, string contentType)?> TryGetFileAsync(string filePath)
     {
         if (!File.Exists(filePath))
