@@ -45,6 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return AdminShell(
       selectedLabel: 'Dashboard',
       title: 'Dashboard',
+      isLoading: dash.isLoading && dash.data.kpis.isEmpty,
       onRefresh: user == null ? null : () async => dash.load(user),
       child: RefreshIndicator(
         onRefresh: () async {
@@ -64,7 +65,7 @@ class _DashboardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (dash.isLoading && dash.data.kpis.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SizedBox.expand();
     }
 
     return LayoutBuilder(

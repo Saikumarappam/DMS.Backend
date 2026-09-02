@@ -39,6 +39,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
     return AdminShell(
       selectedLabel: 'Clients',
       title: 'Clients',
+      isLoading: provider.isLoading && provider.filteredClients.isEmpty,
       onRefresh: () => provider.load(),
       child: RefreshIndicator(
         onRefresh: () => provider.load(),
@@ -75,10 +76,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     ),
                     const SizedBox(height: 8),
                     if (provider.isLoading && provider.filteredClients.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(48),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
+                      const SizedBox(height: 280)
                     else
                       _ClientsTable(
                         clients: provider.pagedClients,

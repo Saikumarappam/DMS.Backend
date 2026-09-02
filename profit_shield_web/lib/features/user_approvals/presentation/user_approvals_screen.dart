@@ -63,6 +63,7 @@ class _UserApprovalsScreenState extends State<UserApprovalsScreen> {
     return AdminShell(
       selectedLabel: 'User Approvals',
       title: _pageTitle(provider.activeStatus),
+      isLoading: provider.isLoading && provider.users.isEmpty,
       onRefresh: () => provider.load(),
       child: RefreshIndicator(
         onRefresh: () => provider.load(),
@@ -122,10 +123,7 @@ class _UserApprovalsScreenState extends State<UserApprovalsScreen> {
                     ),
                     const SizedBox(height: 8),
                     if (provider.isLoading && provider.users.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(48),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
+                      const SizedBox(height: 280)
                     else
                       _UsersTable(
                         status: provider.activeStatus,

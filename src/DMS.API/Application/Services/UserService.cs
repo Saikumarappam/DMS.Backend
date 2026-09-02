@@ -125,7 +125,7 @@ public class UserService
         try
         {
             var ds = await _userRepo.UpdateProfileDataSetAsync(
-                userId, request.Name, request.MobileNumber, request.Email,
+                request.UserId, request.Name, request.MobileNumber, request.Email,
                 request.Address, request.BusinessName, request.ContactPersonName,
                 request.GSTNumber, request.ProfileCompleted, userId);
 

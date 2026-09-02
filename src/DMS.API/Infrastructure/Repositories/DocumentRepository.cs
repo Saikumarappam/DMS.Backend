@@ -36,5 +36,5 @@ public class DocumentRepository : SqlRepositoryBase, IDocumentRepository
     }
 
     public Task<DataSet> UpdateDocumentStatusAsync(DocumentUpdateStatusRequest request, long userId) =>
-       FetchSpDatasetAsync("Document_GetFilterOptions", request.FileId, request.Status, DbValue(userId), DbValue(request.Remarks));
+       FetchSpDatasetAsync("Document_UpdateStatus", request.FileId, request.Status, DbValue(userId), DbValue(request.Remarks));
 }

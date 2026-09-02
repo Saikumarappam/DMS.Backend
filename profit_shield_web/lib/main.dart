@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:provider/provider.dart';
 
 import 'core/config/app_config.dart';
@@ -11,18 +12,24 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/providers/auth_provider.dart';
+import 'features/categories/presentation/categories_screen.dart';
+import 'features/categories/providers/categories_provider.dart';
 import 'features/clients/data/clients_repository.dart';
 import 'features/clients/presentation/clients_screen.dart';
 import 'features/clients/providers/clients_provider.dart';
 import 'features/dashboard/data/dashboard_repository.dart';
 import 'features/dashboard/presentation/dashboard_screen.dart';
 import 'features/dashboard/providers/dashboard_provider.dart';
+import 'features/documents/data/documents_repository.dart';
+import 'features/documents/presentation/documents_screen.dart';
+import 'features/documents/providers/documents_provider.dart';
 import 'features/user_approvals/data/user_approvals_repository.dart';
 import 'features/user_approvals/presentation/user_approvals_screen.dart';
 import 'features/user_approvals/providers/user_approvals_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  pdfrxFlutterInitialize();
   // Use /clients instead of /#/clients on web.
   usePathUrlStrategy();
   ApiLogger.logStartup();
@@ -45,10 +52,13 @@ class _ProfitShieldAppState extends State<ProfitShieldApp> {
   late final DashboardRepository _dashboardRepository;
   late final UserApprovalsRepository _userApprovalsRepository;
   late final ClientsRepository _clientsRepository;
+  late final DocumentsRepository _documentsRepository;
   late final AuthProvider _authProvider;
   late final DashboardProvider _dashboardProvider;
   late final UserApprovalsProvider _userApprovalsProvider;
   late final ClientsProvider _clientsProvider;
+  late final DocumentsProvider _documentsProvider;
+  late final CategoriesProvider _categoriesProvider;
   late final GoRouter _router;
 
   @override
@@ -59,10 +69,13 @@ class _ProfitShieldAppState extends State<ProfitShieldApp> {
     _dashboardRepository = DashboardRepository(_apiClient);
     _userApprovalsRepository = UserApprovalsRepository(_apiClient);
     _clientsRepository = ClientsRepository(_apiClient);
+    _documentsRepository = DocumentsRepository(_apiClient);
     _authProvider = AuthProvider(repository: _authRepository, apiClient: _apiClient);
     _dashboardProvider = DashboardProvider(_dashboardRepository);
     _userApprovalsProvider = UserApprovalsProvider(_userApprovalsRepository);
     _clientsProvider = ClientsProvider(_clientsRepository);
+    _documentsProvider = DocumentsProvider(_documentsRepository);
+    _categoriesProvider = CategoriesProvider(_documentsRepository);
 
     _apiClient.onSessionExpired = () {
       _authProvider.logout();
@@ -96,6 +109,14 @@ class _ProfitShieldAppState extends State<ProfitShieldApp> {
           path: '/clients',
           builder: (context, state) => const ClientsScreen(),
         ),
+        GoRoute(
+          path: '/documents',
+          builder: (context, state) => const DocumentsScreen(),
+        ),
+        GoRoute(
+          path: '/categories',
+          builder: (context, state) => const CategoriesScreen(),
+        ),
       ],
     );
 
@@ -110,6 +131,8 @@ class _ProfitShieldAppState extends State<ProfitShieldApp> {
         ChangeNotifierProvider.value(value: _dashboardProvider),
         ChangeNotifierProvider.value(value: _userApprovalsProvider),
         ChangeNotifierProvider.value(value: _clientsProvider),
+        ChangeNotifierProvider.value(value: _documentsProvider),
+        ChangeNotifierProvider.value(value: _categoriesProvider),
         Provider.value(value: _apiClient),
       ],
       child: MaterialApp.router(

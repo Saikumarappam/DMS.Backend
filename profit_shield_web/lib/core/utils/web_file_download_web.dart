@@ -1,0 +1,17 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+
+import 'dart:html' as html;
+import 'dart:typed_data';
+
+void saveBytesToFile({
+  required String fileName,
+  required List<int> bytes,
+  String mimeType = 'application/octet-stream',
+}) {
+  final blob = html.Blob([Uint8List.fromList(bytes)], mimeType);
+  final url = html.Url.createObjectUrlFromBlob(blob);
+  html.AnchorElement(href: url)
+    ..setAttribute('download', fileName)
+    ..click();
+  html.Url.revokeObjectUrl(url);
+}

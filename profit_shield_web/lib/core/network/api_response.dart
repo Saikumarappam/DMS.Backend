@@ -30,10 +30,21 @@ class ApiResponse {
     final rawData = json['data'];
     if (rawData is Map<String, dynamic>) {
       data = rawData;
+    } else if (json.containsKey('Array0') ||
+        json.containsKey('array0') ||
+        json.containsKey('Array1') ||
+        json.containsKey('array1')) {
+      data = json;
     }
 
+    final hasRows = data != null &&
+        ((data['Array0'] is List && (data['Array0'] as List).isNotEmpty) ||
+            (data['array0'] is List && (data['array0'] as List).isNotEmpty) ||
+            (data['Array1'] is List && (data['Array1'] as List).isNotEmpty) ||
+            (data['array1'] is List && (data['array1'] as List).isNotEmpty));
+
     return ApiResponse(
-      status: json['status'] == true,
+      status: json['status'] == true || (json['status'] == null && (data != null || hasRows)),
       statusCode: '${json['statuscode'] ?? ''}',
       message: '${json['message'] ?? ''}',
       data: data,
@@ -45,7 +56,8 @@ class ApiResponse {
   }
 
   List<Map<String, dynamic>> array(String key) {
-    final list = data?[key];
+    final lower = key.toLowerCase();
+    final list = data?[key] ?? data?[lower];
     if (list is! List) return const [];
     return list
         .whereType<Map>()

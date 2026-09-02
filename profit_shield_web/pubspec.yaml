@@ -41,6 +41,7 @@ dependencies:
   google_fonts: ^8.1.0
   provider: ^6.1.5+1
   intl: ^0.20.3
+  pdfrx: ^2.4.8
 
 dev_dependencies:
   flutter_test:

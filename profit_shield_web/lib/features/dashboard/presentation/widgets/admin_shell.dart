@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/browser_title.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/app_splash_loader.dart';
 import '../../../auth/providers/auth_provider.dart';
-import '../../providers/dashboard_provider.dart';
+import '../../../documents/providers/documents_provider.dart';
 import '../../../user_approvals/providers/user_approvals_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import 'app_sidebar.dart';
 
 class AdminShell extends StatefulWidget {
@@ -18,12 +20,14 @@ class AdminShell extends StatefulWidget {
     required this.title,
     required this.child,
     this.onRefresh,
+    this.isLoading = false,
   });
 
   final String selectedLabel;
   final String title;
   final Widget child;
   final Future<void> Function()? onRefresh;
+  final bool isLoading;
 
   @override
   State<AdminShell> createState() => _AdminShellState();
@@ -33,7 +37,20 @@ class _AdminShellState extends State<AdminShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   static bool _sidebarCollapsed = false;
 
-  List<SidebarItem> _items(DashboardProvider dash, UserApprovalsProvider approvals) {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<DocumentsProvider>().ensurePendingCount();
+    });
+  }
+
+  List<SidebarItem> _items(
+    DashboardProvider dash,
+    UserApprovalsProvider approvals,
+    DocumentsProvider documents,
+  ) {
     final pendingBadge = approvals.counts.pending > 0
         ? approvals.counts.pending
         : dash.data.pendingApprovals;
@@ -46,7 +63,12 @@ class _AdminShellState extends State<AdminShell> {
         badge: pendingBadge > 0 ? pendingBadge : null,
         route: '/user-approvals',
       ),
-      const SidebarItem(label: 'Documents', icon: Icons.folder_outlined, route: '/dashboard'),
+      SidebarItem(
+        label: 'Documents',
+        icon: Icons.folder_outlined,
+        badge: documents.pendingCount > 0 ? documents.pendingCount : null,
+        route: '/documents',
+      ),
       SidebarItem(
         label: 'Tasks',
         icon: Icons.checklist_outlined,
@@ -54,7 +76,7 @@ class _AdminShellState extends State<AdminShell> {
         route: '/dashboard',
       ),
       const SidebarItem(label: 'Reports', icon: Icons.bar_chart_outlined, route: '/dashboard'),
-      const SidebarItem(label: 'Categories', icon: Icons.category_outlined, route: '/dashboard'),
+      const SidebarItem(label: 'Categories', icon: Icons.category_outlined, route: '/categories'),
       const SidebarItem(label: 'Team Members', icon: Icons.groups_outlined, route: '/dashboard'),
       const SidebarItem(label: 'Settings', icon: Icons.settings_outlined, route: '/dashboard'),
       const SidebarItem(label: 'Activity Log', icon: Icons.history, route: '/dashboard'),
@@ -68,6 +90,9 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   void _onSelectSidebar(BuildContext context, SidebarItem item) {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).pop();
+    }
     if (item.label == widget.selectedLabel) return;
     if (item.route == '/dashboard' && item.label != 'Dashboard') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,13 +112,14 @@ class _AdminShellState extends State<AdminShell> {
     final auth = context.watch<AuthProvider>();
     final dash = context.watch<DashboardProvider>();
     final approvals = context.watch<UserApprovalsProvider>();
+    final documents = context.watch<DocumentsProvider>();
     final viewportWidth = MediaQuery.sizeOf(context).width;
     final useDrawer = viewportWidth < Breakpoints.tablet;
     final user = auth.user;
 
     Widget buildSidebar({required bool collapsed}) {
       return AppSidebar(
-        items: _items(dash, approvals),
+        items: _items(dash, approvals, documents),
         selectedLabel: widget.selectedLabel,
         userName: user?.name ?? 'User',
         userRole: user?.roleName ?? '',
@@ -129,7 +155,15 @@ class _AdminShellState extends State<AdminShell> {
                   userName: user?.name ?? 'Admin',
                   userRole: user?.roleName ?? 'Super Admin',
                 ),
-                Expanded(child: widget.child),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      widget.child,
+                      if (widget.isLoading)
+                        const Positioned.fill(child: AppLoadingOverlay()),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

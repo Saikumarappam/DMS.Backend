@@ -212,7 +212,7 @@ class ApiClient {
         apiMessage: api.message,
       );
 
-      if (!api.status) {
+      if (!api.status && api.array0.isEmpty && api.array1.isEmpty) {
         throw ApiException(
           api.message.isEmpty ? 'Request failed.' : api.message,
           statusCode: api.statusCode,

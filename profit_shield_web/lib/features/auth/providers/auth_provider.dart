@@ -55,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       errorMessage = e.toString();
+      print("Login error: $errorMessage");
       isLoading = false;
       notifyListeners();
       return false;
