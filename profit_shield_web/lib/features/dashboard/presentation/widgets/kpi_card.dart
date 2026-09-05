@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../models/dashboard_models.dart';
 
 class KpiCard extends StatelessWidget {
-  const KpiCard({super.key, required this.metric});
+  const KpiCard({super.key, required this.metric, this.onTap});
 
   final KpiMetric metric;
+  final VoidCallback? onTap;
 
   IconData get _icon {
     switch (metric.icon) {
@@ -32,11 +34,18 @@ class KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = Color(metric.accent);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+    final scale = AppScale.of(context);
+    final iconBox = scale.isMobile ? 32.0 : 36.0;
+    final card = Container(
+      padding: EdgeInsets.fromLTRB(
+        scale.cardPadding,
+        scale.cardPadding,
+        scale.cardPadding,
+        scale.isMobile ? 10 : 12,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(scale.radius),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
@@ -51,22 +60,22 @@ class KpiCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: iconBox,
+            height: iconBox,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(_icon, color: accent, size: 20),
+            child: Icon(_icon, color: accent, size: scale.iconMd),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: scale.gap),
           Text(
             metric.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 12,
+              fontSize: scale.caption,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -76,8 +85,8 @@ class KpiCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               metric.value,
-              style: const TextStyle(
-                fontSize: 24,
+              style: TextStyle(
+                fontSize: scale.isMobile ? 20 : 24,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
                 height: 1.1,
@@ -90,12 +99,23 @@ class KpiCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: scale.caption,
               fontWeight: FontWeight.w500,
               color: metric.deltaPositive ? AppColors.success : AppColors.danger,
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) return card;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(scale.radius),
+        child: card,
       ),
     );
   }

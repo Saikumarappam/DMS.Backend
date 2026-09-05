@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -140,44 +141,57 @@ class _KpiRow extends StatelessWidget {
     }
 
     final gap = mode == ContentLayoutMode.spacious ? 12.0 : 8.0;
-    final minCardWidth = mode == ContentLayoutMode.compact ? 160.0 : 150.0;
-    final needed = metrics.length * minCardWidth + (metrics.length - 1) * gap;
+    final columns = contentWidth >= 1100
+        ? metrics.length.clamp(1, 6)
+        : contentWidth >= 720
+            ? 3
+            : contentWidth >= 420
+                ? 2
+                : 1;
 
-    final row = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var i = 0; i < metrics.length; i++) ...[
-          if (i > 0) SizedBox(width: gap),
-          Expanded(child: KpiCard(metric: metrics[i])),
-        ],
-      ],
-    );
-
-    if (contentWidth + 0.5 >= needed) {
-      return row;
+    final rows = <Widget>[];
+    for (var i = 0; i < metrics.length; i += columns) {
+      final rowItems = <Widget>[];
+      for (var col = 0; col < columns; col++) {
+        final index = i + col;
+        if (col > 0) rowItems.add(SizedBox(width: gap));
+        if (index < metrics.length) {
+          rowItems.add(
+            Expanded(
+              child: KpiCard(
+                metric: metrics[index],
+                onTap: () => _openKpi(context, metrics[index]),
+              ),
+            ),
+          );
+        } else {
+          rowItems.add(const Expanded(child: SizedBox.shrink()));
+        }
+      }
+      if (rows.isNotEmpty) rows.add(SizedBox(height: gap));
+      rows.add(Row(crossAxisAlignment: CrossAxisAlignment.start, children: rowItems));
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: needed.clamp(needed, contentWidth > needed ? contentWidth : needed),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: needed, maxWidth: needed),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < metrics.length; i++) ...[
-                if (i > 0) SizedBox(width: gap),
-                SizedBox(
-                  width: minCardWidth,
-                  child: KpiCard(metric: metrics[i]),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
+    return Column(children: rows);
+  }
+
+  void _openKpi(BuildContext context, KpiMetric metric) {
+    final title = metric.title.toLowerCase();
+    if (title.contains('client')) {
+      context.go('/clients');
+      return;
+    }
+    if (title.contains('received') || title.contains('total documents')) {
+      context.go('/categories?status=all');
+      return;
+    }
+    if (title.contains('pending')) {
+      context.go('/documents?status=pending');
+      return;
+    }
+    if (title.contains('completed') || title.contains('approved')) {
+      context.go('/categories?status=processes');
+    }
   }
 }
 
@@ -202,31 +216,46 @@ class _ChartsAndTableRow extends StatelessWidget {
     final trend = DocumentsTrendChart(points: dash.data.trend);
     final table = TopClientsTable(rows: dash.data.topClients);
 
-    final minRowWidth = mode == ContentLayoutMode.compact ? 960.0 : 1020.0;
-
-    Widget buildRow(double width) {
-      return SizedBox(
-        width: width,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 3, child: donut),
-            SizedBox(width: gap),
-            Expanded(flex: 4, child: trend),
-            SizedBox(width: gap),
-            Expanded(flex: 4, child: table),
-          ],
-        ),
+    if (contentWidth >= 1100) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(flex: 3, child: donut),
+          SizedBox(width: gap),
+          Expanded(flex: 4, child: trend),
+          SizedBox(width: gap),
+          Expanded(flex: 4, child: table),
+        ],
       );
     }
 
-    if (contentWidth >= minRowWidth) {
-      return buildRow(contentWidth);
+    if (contentWidth >= 720) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: donut),
+              SizedBox(width: gap),
+              Expanded(child: trend),
+            ],
+          ),
+          SizedBox(height: gap),
+          table,
+        ],
+      );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: buildRow(minRowWidth),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        donut,
+        SizedBox(height: gap),
+        trend,
+        SizedBox(height: gap),
+        table,
+      ],
     );
   }
 }

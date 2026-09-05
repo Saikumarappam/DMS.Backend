@@ -8,13 +8,14 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/utils/web_file_download.dart';
 import '../../dashboard/presentation/widgets/admin_shell.dart';
-import '../../user_approvals/presentation/widgets/admin_password_dialog.dart';
 import '../models/document_model.dart';
 import '../providers/documents_provider.dart';
 import 'widgets/document_preview_image.dart';
 
 class DocumentsScreen extends StatefulWidget {
-  const DocumentsScreen({super.key});
+  const DocumentsScreen({super.key, this.initialStatus});
+
+  final String? initialStatus;
 
   @override
   State<DocumentsScreen> createState() => _DocumentsScreenState();
@@ -28,8 +29,16 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     super.initState();
     _searchController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DocumentsProvider>().load();
+      context.read<DocumentsProvider>().load(status: widget.initialStatus);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant DocumentsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialStatus != widget.initialStatus) {
+      context.read<DocumentsProvider>().load(status: widget.initialStatus);
+    }
   }
 
   @override
@@ -122,9 +131,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   Future<void> _confirmApprove(DocumentItem doc) async {
-    if (!await showAdminPasswordDialog(context)) return;
-    if (!mounted) return;
-
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -175,9 +181,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   }
 
   Future<void> _confirmDelete(DocumentItem doc) async {
-    if (!await showAdminPasswordDialog(context)) return;
-    if (!mounted) return;
-
     final remarksController = TextEditingController();
     var remarks = '';
     final ok = await showDialog<bool>(
@@ -188,7 +191,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           builder: (context, setState) => AlertDialog(
             title: const Text('Delete Document'),
             content: SizedBox(
-              width: 360,
+              width: formDialogWidthOf(ctx, max: 360),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,13 +294,19 @@ class _DocumentPreviewDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    final dialogWidth = previewDialogWidthOf(context);
+    final inset = previewDialogInsetOf(context);
     final bytes = document.previewBytes;
     if (document.fileType == DocumentFileType.pdf && bytes != null && bytes.isNotEmpty) {
       return AlertDialog(
+        insetPadding: inset,
+        constraints: BoxConstraints(minWidth: 280, maxWidth: dialogWidth),
+        titlePadding: const EdgeInsets.fromLTRB(14, 8, 4, 0),
+        contentPadding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
         title: _dialogTitle(context),
         content: SizedBox(
-          width: size.width < 900 ? size.width - 40.0 : 860.0,
-          height: size.height * 0.72,
+          width: dialogWidth,
+          height: size.height * 0.50,
           child: PdfDocumentViewBuilder(
             documentRef: PdfDocumentRefData(
               bytes,
@@ -331,11 +340,15 @@ class _DocumentPreviewDialog extends StatelessWidget {
     }
 
     return AlertDialog(
+      insetPadding: inset,
+      constraints: BoxConstraints(minWidth: 280, maxWidth: dialogWidth),
+      titlePadding: const EdgeInsets.fromLTRB(14, 8, 4, 0),
+      contentPadding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
       title: _dialogTitle(context),
       content: SizedBox(
-        width: size.width < 720 ? size.width - 48.0 : 640.0,
+        width: dialogWidth,
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: size.height * 0.65),
+          constraints: BoxConstraints(maxHeight: size.height * 0.42),
           child: _singlePagePreview(context, size),
         ),
       ),
@@ -348,14 +361,14 @@ class _DocumentPreviewDialog extends StatelessWidget {
   Widget _dialogTitle(BuildContext context) {
     return Row(
       children: [
-        _FileGlyph(type: document.fileType, size: 36),
+        _FileGlyph(type: document.fileType, size: 28),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(document.fileName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-              Text(document.description, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              Text(document.fileName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              Text(document.description, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
             ],
           ),
         ),
@@ -378,7 +391,7 @@ class _DocumentPreviewDialog extends StatelessWidget {
           DocumentPreviewImage(
             document: document,
             width: double.infinity,
-            height: size.height * 0.42,
+            height: 120,
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 16),
@@ -406,45 +419,58 @@ class _DocumentPreviewDialog extends StatelessWidget {
 
     return SizedBox(
       width: double.maxFinite,
-      child: Row(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
         children: [
-          ElevatedButton(
-            style: compactAction.copyWith(
-              backgroundColor: const WidgetStatePropertyAll(AppColors.danger),
-              foregroundColor: const WidgetStatePropertyAll(Colors.white),
-            ),
-            onPressed: onDelete,
-            child: const Text('Delete'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton(
+                style: compactAction.copyWith(
+                  backgroundColor: const WidgetStatePropertyAll(AppColors.danger),
+                  foregroundColor: const WidgetStatePropertyAll(Colors.white),
+                ),
+                onPressed: onDelete,
+                child: const Text('Delete'),
+              ),
+              ElevatedButton(
+                style: compactAction.copyWith(
+                  backgroundColor: const WidgetStatePropertyAll(Color(0xFF16A34A)),
+                  foregroundColor: const WidgetStatePropertyAll(Colors.white),
+                ),
+                onPressed: onApprove,
+                child: const Text('Approve'),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            style: compactAction.copyWith(
-              backgroundColor: const WidgetStatePropertyAll(Color(0xFF16A34A)),
-              foregroundColor: const WidgetStatePropertyAll(Colors.white),
-            ),
-            onPressed: onApprove,
-            child: const Text('Approve'),
-          ),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: onDownload,
-            icon: const Icon(Icons.download_outlined, size: 16),
-            label: const Text('Download'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              visualDensity: VisualDensity.compact,
-            ),
-            child: const Text('Close', style: TextStyle(color: AppColors.navy)),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onDownload,
+                icon: const Icon(Icons.download_outlined, size: 16),
+                label: const Text('Download'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text('Close'),
+              ),
+            ],
           ),
         ],
       ),
@@ -471,7 +497,7 @@ class _DocumentsHeader extends StatelessWidget {
                 Text(
                   'Documents',
                   style: TextStyle(
-                    fontSize: compact ? 22 : 26,
+                    fontSize: AppScale.of(context).pageTitle,
                     fontWeight: FontWeight.w800,
                     color: AppColors.navy,
                     height: 1.2,
@@ -481,7 +507,7 @@ class _DocumentsHeader extends StatelessWidget {
                 Text(
                   'View and manage all uploaded documents',
                   style: TextStyle(
-                    fontSize: compact ? 13 : 14,
+                    fontSize: AppScale.of(context).body,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -1036,7 +1062,7 @@ class _DocumentCard extends StatelessWidget {
           DocumentPreviewImage(
             document: document,
             width: double.infinity,
-            height: 220,
+            height: AppScale.of(context).isMobile ? 160 : 220,
             fit: BoxFit.contain,
             onTap: onView,
           ),
@@ -1070,7 +1096,7 @@ class _DocumentCard extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   icon: const Icon(Icons.check_circle_outline, size: 18),
-                  label: const Text('Approve'),
+                  label: const Text('Approve', overflow: TextOverflow.ellipsis),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1085,7 +1111,7 @@ class _DocumentCard extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Delete'),
+                  label: const Text('Delete', overflow: TextOverflow.ellipsis),
                 ),
               ),
             ],

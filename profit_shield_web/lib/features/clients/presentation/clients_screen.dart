@@ -3,6 +3,7 @@ import 'package:profit_shield_web/features/user_approvals/presentation/widgets/a
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/responsive.dart';
 import '../../dashboard/presentation/widgets/admin_shell.dart';
 import '../models/client_model.dart';
 import '../providers/clients_provider.dart';
@@ -43,63 +44,73 @@ class _ClientsScreenState extends State<ClientsScreen> {
       onRefresh: () => provider.load(),
       child: RefreshIndicator(
         onRefresh: () => provider.load(),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (provider.errorMessage != null)
-                _MessageBanner(message: provider.errorMessage!, isError: true),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final scale = AppScale.of(context);
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(scale.pagePadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (provider.errorMessage != null)
+                    _MessageBanner(message: provider.errorMessage!, isError: true),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(scale.radius),
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: _ClientsSearchBar(
-                        searchController: _searchController,
-                        onSearchChanged: provider.setSearch,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            scale.cardPadding,
+                            scale.cardPadding,
+                            scale.cardPadding,
+                            0,
+                          ),
+                          child: _ClientsSearchBar(
+                            searchController: _searchController,
+                            onSearchChanged: provider.setSearch,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        if (provider.isLoading && provider.filteredClients.isEmpty)
+                          const SizedBox(height: 280)
+                        else
+                          _ClientsTable(
+                            clients: provider.pagedClients,
+                            startIndex:
+                                (provider.currentPage - 1) *
+                                ClientsProvider.pageSize,
+                            onView: (client) =>
+                                _showClientDialog(context, client, editable: false),
+                            onEdit: (client) =>
+                                _showClientDialog(context, client, editable: true),
+                          ),
+                        _ClientsPaginationBar(
+                          currentPage: provider.currentPage,
+                          totalPages: provider.totalPages,
+                          totalItems: provider.filteredClients.length,
+                          pageSize: ClientsProvider.pageSize,
+                          onPageChanged: provider.setPage,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    if (provider.isLoading && provider.filteredClients.isEmpty)
-                      const SizedBox(height: 280)
-                    else
-                      _ClientsTable(
-                        clients: provider.pagedClients,
-                        startIndex:
-                            (provider.currentPage - 1) *
-                            ClientsProvider.pageSize,
-                        onView: (client) =>
-                            _showClientDialog(context, client, editable: false),
-                        onEdit: (client) =>
-                            _showClientDialog(context, client, editable: true),
-                      ),
-                    _ClientsPaginationBar(
-                      currentPage: provider.currentPage,
-                      totalPages: provider.totalPages,
-                      totalItems: provider.filteredClients.length,
-                      pageSize: ClientsProvider.pageSize,
-                      onPageChanged: provider.setPage,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -169,52 +180,45 @@ class _ClientsSearchBar extends StatelessWidget {
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
 
-  static const double _searchWidth = 260;
-
   @override
   Widget build(BuildContext context) {
-    // Align prevents the parent Column's CrossAxisAlignment.stretch
-    // from forcing the search field to full width.
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SizedBox(
-        // width: _searchWidth,
-        width: MediaQuery.of(context).size.width < 600
-            ? MediaQuery.of(context).size.width *
-                  0.8 // // Mobile
-            : MediaQuery.of(context).size.width < 1024
-            ? MediaQuery.of(context).size.width *
-                  0.6 // Tablet
-            : MediaQuery.of(context).size.width * 0.4, // Desktop
-        child: TextField(
-          controller: searchController,
-          onChanged: onSearchChanged,
-          decoration: InputDecoration(
-            hintText: 'Search clients by name, GSTIN, mobile...',
-            hintStyle: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
-            prefixIcon: const Icon(
-              Icons.search,
-              color: AppColors.textSecondary,
-            ),
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: searchFieldWidthOf(constraints.maxWidth),
+            child: TextField(
+              controller: searchController,
+              onChanged: onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'Search clients by name, GSTIN, mobile...',
+                hintStyle: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppColors.textSecondary,
+                ),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -241,10 +245,10 @@ class _ClientsTable extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(minWidth: constraints.maxWidth),
             child: DataTable(
-              headingRowHeight: 44,
-              dataRowMinHeight: 56,
-              dataRowMaxHeight: 72,
-              columnSpacing: 24,
+              headingRowHeight: AppScale.of(context).isMobile ? 40 : 44,
+              dataRowMinHeight: AppScale.of(context).isMobile ? 48 : 56,
+              dataRowMaxHeight: AppScale.of(context).isMobile ? 64 : 72,
+              columnSpacing: AppScale.of(context).isMobile ? 12 : 24,
               headingTextStyle: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -395,53 +399,55 @@ class _ClientsPaginationBar extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Row(
-        children: [
-          Text(
-            'Showing $start to $end of $totalItems clients',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
+      child: AdaptiveSplit(
+        start: Text(
+          'Showing $start to $end of $totalItems clients',
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        end: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: currentPage > 1
+                  ? () => onPageChanged(currentPage - 1)
+                  : null,
+              icon: const Icon(Icons.chevron_left),
             ),
-          ),
-          const Spacer(),
-          IconButton(
-            onPressed: currentPage > 1
-                ? () => onPageChanged(currentPage - 1)
-                : null,
-            icon: const Icon(Icons.chevron_left),
-          ),
-          for (final page in visiblePages) ...[
-            if (page == -1)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Text('…', style: TextStyle(color: AppColors.textMuted)),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: TextButton(
-                  onPressed: () => onPageChanged(page),
-                  style: TextButton.styleFrom(
-                    backgroundColor: page == currentPage
-                        ? AppColors.success.withValues(alpha: 0.12)
-                        : null,
-                    side: page == currentPage
-                        ? const BorderSide(color: AppColors.success)
-                        : null,
-                    minimumSize: const Size(36, 36),
+            for (final page in visiblePages) ...[
+              if (page == -1)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  child: Text('…', style: TextStyle(color: AppColors.textMuted)),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: TextButton(
+                    onPressed: () => onPageChanged(page),
+                    style: TextButton.styleFrom(
+                      backgroundColor: page == currentPage
+                          ? AppColors.success.withValues(alpha: 0.12)
+                          : null,
+                      side: page == currentPage
+                          ? const BorderSide(color: AppColors.success)
+                          : null,
+                      minimumSize: const Size(36, 36),
+                    ),
+                    child: Text('$page'),
                   ),
-                  child: Text('$page'),
                 ),
-              ),
+            ],
+            IconButton(
+              onPressed: currentPage < totalPages
+                  ? () => onPageChanged(currentPage + 1)
+                  : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
           ],
-          IconButton(
-            onPressed: currentPage < totalPages
-                ? () => onPageChanged(currentPage + 1)
-                : null,
-            icon: const Icon(Icons.chevron_right),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -595,6 +601,7 @@ class _ClientDetailsDialogState extends State<_ClientDetailsDialog> {
     final client = widget.client;
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Row(
         children: [
           Expanded(
@@ -607,7 +614,7 @@ class _ClientDetailsDialogState extends State<_ClientDetailsDialog> {
         ],
       ),
       content: SizedBox(
-        width: 460,
+        width: formDialogWidthOf(context),
         child: SingleChildScrollView(
           child: widget.editable
               ? Column(

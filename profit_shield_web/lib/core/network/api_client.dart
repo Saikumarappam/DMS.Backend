@@ -29,6 +29,7 @@ class ApiClient {
   static const _refreshKey = 'ps_refresh_token';
   static const _expiresKey = 'ps_expires_at';
   static const _usernameKey = 'ps_login_username';
+  static const _lastActivityKey = 'ps_last_activity_at';
 
   Future<void> loadStoredTokens() async {
     final prefs = await SharedPreferences.getInstance();
@@ -63,6 +64,25 @@ class ApiClient {
     await prefs.remove(_refreshKey);
     await prefs.remove(_expiresKey);
     await prefs.remove(_usernameKey);
+    await prefs.remove(_lastActivityKey);
+  }
+
+  Future<void> touchActivity() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastActivityKey, DateTime.now().toIso8601String());
+  }
+
+  Future<DateTime?> loadLastActivity() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_lastActivityKey);
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<bool> isIdleExpired(Duration timeout) async {
+    final last = await loadLastActivity();
+    if (last == null) return false;
+    return DateTime.now().difference(last) >= timeout;
   }
 
   Future<void> persistUsername(String username) async {

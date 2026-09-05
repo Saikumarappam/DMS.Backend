@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../models/dashboard_models.dart';
 
 class TopClientsTable extends StatelessWidget {
@@ -11,7 +12,12 @@ class TopClientsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      padding: EdgeInsets.fromLTRB(
+        AppScale.of(context).cardPadding + 4,
+        AppScale.of(context).cardPadding + 4,
+        AppScale.of(context).cardPadding + 4,
+        8,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -29,6 +35,8 @@ class TopClientsTable extends StatelessWidget {
         children: [
           const Text(
             'Top 5 Clients with Pending Tasks',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,

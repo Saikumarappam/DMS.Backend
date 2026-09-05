@@ -38,9 +38,75 @@
       margin: 0;
       background: #00234E;
     }
+    .ps-boot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #00234E;
+      z-index: 9999;
+      transition: opacity 0.25s ease;
+    }
+    .ps-boot.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .ps-boot-mark {
+      position: relative;
+      width: 112px;
+      height: 112px;
+    }
+    .ps-boot-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 4px solid rgba(173, 132, 38, 0.2);
+      border-top-color: #AD8426;
+      animation: ps-spin 0.9s linear infinite;
+    }
+    .ps-boot-icon {
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #00234E;
+      font-family: Segoe UI, sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    }
+    .ps-boot-label {
+      margin-top: 20px;
+      color: #fff;
+      font-family: Segoe UI, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    @keyframes ps-spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+  <div class="ps-boot" id="ps-boot">
+    <div class="ps-boot-mark">
+      <div class="ps-boot-ring"></div>
+      <div class="ps-boot-icon">PS</div>
+    </div>
+    <div class="ps-boot-label">ProfitShield</div>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('ps-boot');
+      if (!el) return;
+      el.classList.add('hide');
+      setTimeout(function () { el.remove(); }, 280);
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

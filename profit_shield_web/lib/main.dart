@@ -9,6 +9,8 @@ import 'core/config/app_config.dart';
 import 'core/network/api_client.dart';
 import 'core/network/api_logger.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/responsive.dart';
+import 'core/widgets/app_splash_loader.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/providers/auth_provider.dart';
@@ -27,14 +29,16 @@ import 'features/user_approvals/data/user_approvals_repository.dart';
 import 'features/user_approvals/presentation/user_approvals_screen.dart';
 import 'features/user_approvals/providers/user_approvals_provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
   // Use /clients instead of /#/clients on web.
   usePathUrlStrategy();
+  await AppConfig.loadRuntimeConfig();
   ApiLogger.logStartup();
   if (kDebugMode) {
     debugPrint('API base URL: ${AppConfig.apiBaseUrl}');
+    debugPrint('Idle timeout hours: ${AppConfig.idleTimeoutHours}');
   }
   runApp(const ProfitShieldApp());
 }
@@ -60,6 +64,7 @@ class _ProfitShieldAppState extends State<ProfitShieldApp> {
   late final DocumentsProvider _documentsProvider;
   late final CategoriesProvider _categoriesProvider;
   late final GoRouter _router;
+  bool _showSplash = true;
 
   @override
   void initState() {
@@ -111,16 +116,27 @@ class _ProfitShieldAppState extends State<ProfitShieldApp> {
         ),
         GoRoute(
           path: '/documents',
-          builder: (context, state) => const DocumentsScreen(),
+          builder: (context, state) => DocumentsScreen(
+            initialStatus: state.uri.queryParameters['status'],
+          ),
         ),
         GoRoute(
           path: '/categories',
-          builder: (context, state) => const CategoriesScreen(),
+          builder: (context, state) => CategoriesScreen(
+            initialStatus: state.uri.queryParameters['status'],
+          ),
         ),
       ],
     );
 
     _authProvider.bootstrap();
+    _finishSplash();
+  }
+
+  Future<void> _finishSplash() async {
+    await Future<void>.delayed(const Duration(milliseconds: 1400));
+    if (!mounted) return;
+    setState(() => _showSplash = false);
   }
 
   @override
@@ -140,6 +156,34 @@ class _ProfitShieldAppState extends State<ProfitShieldApp> {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         routerConfig: _router,
+        builder: (context, child) {
+          if (_showSplash) return const AppSplashScreen();
+          final scale = AppScale.of(context);
+          final media = MediaQuery.of(context);
+          final factor =
+              (media.textScaler.scale(1) * scale.fontFactor).clamp(0.85, 1.18);
+          Widget content = MediaQuery(
+            data: media.copyWith(textScaler: TextScaler.linear(factor)),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                visualDensity: scale.visualDensity,
+                iconTheme: Theme.of(context).iconTheme.copyWith(size: scale.iconMd),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
+          );
+          if (kIsWeb) {
+            content = Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) =>
+                  context.read<AuthProvider>().onUserActivity(),
+              onPointerSignal: (_) =>
+                  context.read<AuthProvider>().onUserActivity(),
+              child: content,
+            );
+          }
+          return content;
+        },
       ),
     );
   }

@@ -251,7 +251,7 @@ class _SidebarNavTileState extends State<_SidebarNavTile> {
                     child: Icon(
                       widget.item.icon,
                       color: _hovering || widget.selected ? Colors.white : Colors.white70,
-                      size: 22,
+                      size: AppScale.of(context).iconMd,
                     ),
                   ),
                 )
@@ -260,7 +260,7 @@ class _SidebarNavTileState extends State<_SidebarNavTile> {
                     Icon(
                       widget.item.icon,
                       color: widget.selected ? Colors.white : Colors.white70,
-                      size: 20,
+                      size: AppScale.of(context).iconMd,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -271,7 +271,7 @@ class _SidebarNavTileState extends State<_SidebarNavTile> {
                         style: TextStyle(
                           color: widget.selected ? Colors.white : Colors.white70,
                           fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
-                          fontSize: 13.5,
+                          fontSize: AppScale.of(context).label,
                         ),
                       ),
                     ),
@@ -336,12 +336,12 @@ class _SidebarHeader extends StatelessWidget {
         child: collapsed
             ? Image.asset(
                 AppAssets.logoMark,
-                height: 36,
+                height: AppScale.of(context).isMobile ? 32 : 36,
                 fit: BoxFit.contain,
               )
             : Image.asset(
                 AppAssets.logoFull,
-                height: 50,
+                height: AppScale.of(context).isMobile ? 42 : 50,
                 fit: BoxFit.contain,
               ),
       ),

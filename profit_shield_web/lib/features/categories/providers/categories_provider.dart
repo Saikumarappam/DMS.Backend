@@ -13,7 +13,6 @@ class CategoriesProvider extends ChangeNotifier {
 
   static const pageSize = 6;
   static const allId = '';
-  static const defaultStatus = 'pending';
 
   List<DocumentBusiness> businesses = [];
   List<DocumentCategoryOption> voucherTypes = [];
@@ -21,12 +20,12 @@ class CategoriesProvider extends ChangeNotifier {
   List<DocumentItem> documents = [];
 
   String pendingBusinessId = allId;
-  String pendingStatus = defaultStatus;
+  String pendingStatus = allId;
   String pendingVoucherTypeId = allId;
   DateTimeRange? pendingDateRange;
 
   String appliedBusinessId = allId;
-  String appliedStatus = defaultStatus;
+  String appliedStatus = allId;
   String appliedVoucherTypeId = allId;
   DateTimeRange? appliedDateRange;
   String searchQuery = '';
@@ -38,7 +37,7 @@ class CategoriesProvider extends ChangeNotifier {
   Timer? _searchDebounce;
 
   List<DocumentFilterChoice> get businessChoices => [
-        DocumentFilterChoice.selectBusiness,
+        DocumentFilterChoice.all,
         ...businesses.map((item) => item.asChoice),
       ];
 
@@ -47,14 +46,18 @@ class CategoriesProvider extends ChangeNotifier {
     final apiStatuses = <DocumentFilterChoice>[];
     for (final status in statuses) {
       final id = status.toLowerCase().trim();
-      if (id.isEmpty || !seen.add(id)) continue;
+      if (id.isEmpty || id == 'all' || !seen.add(id)) continue;
       apiStatuses.add(DocumentFilterChoice(id: id, label: status));
     }
-    final hasPending = apiStatuses.any((item) => item.id == defaultStatus);
-    return [
-      if (!hasPending) const DocumentFilterChoice(id: defaultStatus, label: 'Pending'),
+    final choices = [
+      DocumentFilterChoice.all,
       ...apiStatuses,
     ];
+    final selected = pendingStatus.isNotEmpty ? pendingStatus : appliedStatus;
+    if (_isProcessedAlias(selected) && !choices.any((choice) => _isProcessedAlias(choice.id))) {
+      choices.add(const DocumentFilterChoice(id: 'processes', label: 'Processes'));
+    }
+    return choices;
   }
 
   List<DocumentFilterChoice> get voucherTypeChoices => [
@@ -62,10 +65,7 @@ class CategoriesProvider extends ChangeNotifier {
         ...voucherTypes.map((item) => item.asChoice),
       ];
 
-  String get historyStatus {
-    final value = appliedStatus.trim();
-    return value.isEmpty ? defaultStatus : value;
-  }
+  String get historyStatus => appliedStatus.trim();
 
   int get processedCount => documents.where((doc) => doc.isProcessed).length;
   int get deletedCount => documents.where((doc) => doc.isDeleted).length;
@@ -84,8 +84,13 @@ class CategoriesProvider extends ChangeNotifier {
     return documents.sublist(start, (start + pageSize).clamp(0, documents.length));
   }
 
-  Future<void> load() async {
+  Future<void> load({String? status}) async {
     await loadFilters();
+    if (status != null) {
+      appliedStatus = _sanitizeStatus(_normalizeStatus(status));
+      pendingStatus = appliedStatus;
+      notifyListeners();
+    }
     await loadDocuments();
   }
 
@@ -120,7 +125,7 @@ class CategoriesProvider extends ChangeNotifier {
     }
     try {
       documents = await _repository.fetchHistory(
-        clientId: int.tryParse(appliedBusinessId),
+        clientId: int.tryParse(appliedBusinessId) ?? 0,
         categoryId: int.tryParse(appliedVoucherTypeId),
         searchFileName: searchQuery,
         status: historyStatus,
@@ -139,7 +144,7 @@ class CategoriesProvider extends ChangeNotifier {
 
   Future<void> applyFilters() async {
     appliedBusinessId = pendingBusinessId;
-    appliedStatus = pendingStatus.isEmpty ? defaultStatus : pendingStatus;
+    appliedStatus = pendingStatus;
     appliedVoucherTypeId = pendingVoucherTypeId;
     appliedDateRange = pendingDateRange;
     await loadDocuments();
@@ -147,11 +152,11 @@ class CategoriesProvider extends ChangeNotifier {
 
   Future<void> reset() async {
     pendingBusinessId = allId;
-    pendingStatus = defaultStatus;
+    pendingStatus = allId;
     pendingVoucherTypeId = allId;
     pendingDateRange = null;
     appliedBusinessId = allId;
-    appliedStatus = defaultStatus;
+    appliedStatus = allId;
     appliedVoucherTypeId = allId;
     appliedDateRange = null;
     searchQuery = '';
@@ -166,7 +171,7 @@ class CategoriesProvider extends ChangeNotifier {
   }
 
   void setPendingStatus(String id) {
-    pendingStatus = id.isEmpty ? defaultStatus : id;
+    pendingStatus = id;
     notifyListeners();
   }
 
@@ -226,13 +231,42 @@ class CategoriesProvider extends ChangeNotifier {
     }
   }
 
+  static bool _isProcessedAlias(String id) {
+    switch (id.trim().toLowerCase()) {
+      case 'process':
+      case 'processed':
+      case 'processes':
+      case 'approved':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  String _normalizeStatus(String status) {
+    final value = status.trim().toLowerCase();
+    if (value.isEmpty || value == 'all') return allId;
+    if (_isProcessedAlias(value)) return 'processes';
+    return value;
+  }
+
   String _sanitize(String id, List<DocumentFilterChoice> choices) {
     return choices.any((choice) => choice.id == id) ? id : allId;
   }
 
   String _sanitizeStatus(String id) {
-    final match = statusChoices.where((choice) => choice.id.toLowerCase() == id.toLowerCase());
-    return match.isEmpty ? defaultStatus : match.first.id;
+    if (id.isEmpty) return allId;
+    final requested = id.toLowerCase();
+    for (final choice in statusChoices) {
+      if (choice.id.toLowerCase() == requested) return choice.id;
+    }
+    if (_isProcessedAlias(id)) {
+      for (final choice in statusChoices) {
+        if (_isProcessedAlias(choice.id)) return choice.id;
+      }
+      return 'processes';
+    }
+    return allId;
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../core/config/app_assets.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/browser_title.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_splash_loader.dart';
 import '../providers/auth_provider.dart';
 
@@ -85,8 +86,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     setBrowserTitle('Login');
     final auth = context.watch<AuthProvider>();
+    final scale = AppScale.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final cardWidth = width < 480 ? width - 32 : 420.0;
+    final cardWidth = width < 480 ? width - 32 : (scale.isTablet ? 400.0 : 420.0);
 
     return Scaffold(
       body: Stack(
@@ -94,7 +96,10 @@ class _LoginScreenState extends State<LoginScreen> {
           const _LoginBackground(),
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+              padding: EdgeInsets.symmetric(
+                vertical: scale.isMobile ? 20 : 32,
+                horizontal: scale.pagePadding,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -108,7 +113,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       shadowColor: Colors.black26,
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+                        padding: EdgeInsets.fromLTRB(
+                          scale.isMobile ? 18 : 28,
+                          scale.isMobile ? 22 : 32,
+                          scale.isMobile ? 18 : 28,
+                          scale.isMobile ? 20 : 28,
+                        ),
                         child: Form(
                           key: _formKey,
                           child: Column(
@@ -178,24 +188,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                               ),
                               const SizedBox(height: 14),
-                              Row(
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: Checkbox(
-                                      value: _rememberMe,
-                                      onChanged: (v) => setState(
-                                        () => _rememberMe = v ?? false,
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: Checkbox(
+                                          value: _rememberMe,
+                                          onChanged: (v) => setState(
+                                            () => _rememberMe = v ?? false,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Remember me',
+                                        style: TextStyle(fontSize: 13),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'Remember me',
-                                    style: TextStyle(fontSize: 13),
-                                  ),
-                                  const Spacer(),
                                   TextButton(
                                     onPressed: _showForgotPassword,
                                     child: const Text(
@@ -294,11 +310,14 @@ class _BrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = AppScale.of(context);
     return Container(
-      width: 220,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      width: scale.isMobile ? 170 : 220,
+      padding: EdgeInsets.symmetric(
+        horizontal: scale.isMobile ? 10 : 16,
+        vertical: scale.isMobile ? 8 : 14,
+      ),
       decoration: BoxDecoration(
-        // color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -308,7 +327,11 @@ class _BrandHeader extends StatelessWidget {
           ),
         ],
       ),
-      child: Image.asset(AppAssets.logoFull2, height: 120, fit: BoxFit.contain),
+      child: Image.asset(
+        AppAssets.logoFull2,
+        height: scale.isMobile ? 72 : scale.isTablet ? 96 : 120,
+        fit: BoxFit.contain,
+      ),
     );
   }
 }

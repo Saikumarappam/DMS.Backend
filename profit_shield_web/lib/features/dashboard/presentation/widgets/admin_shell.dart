@@ -93,7 +93,11 @@ class _AdminShellState extends State<AdminShell> {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).pop();
     }
-    if (item.label == widget.selectedLabel) return;
+    if (item.label == widget.selectedLabel) {
+      if (item.route == '/documents') context.go('/documents');
+      if (item.route == '/categories') context.go('/categories');
+      return;
+    }
     if (item.route == '/dashboard' && item.label != 'Dashboard') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${item.label} coming soon')),
@@ -206,7 +210,7 @@ class AdminTopBar extends StatelessWidget {
     final compactHeader = viewportWidth < Breakpoints.tablet;
 
     return Container(
-      height: 64,
+      height: AppScale.of(context).topBarHeight,
       padding: EdgeInsets.symmetric(horizontal: compactHeader ? 8 : 16),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -252,16 +256,16 @@ class AdminTopBar extends StatelessWidget {
                 IconButton(
                   tooltip: 'Refresh',
                   onPressed: () => onRefresh!(),
-                  icon: Icon(Icons.refresh, size: compactHeader ? 20 : 22),
+                  icon: Icon(Icons.refresh, size: compactHeader ? AppScale.of(context).iconMd : 22),
                   visualDensity: VisualDensity.compact,
                 ),
               IconButton(
                 tooltip: 'Notifications',
                 onPressed: () {},
-                icon: Icon(
-                  Icons.notifications_none_outlined,
-                  size: compactHeader ? 20 : 22,
-                ),
+              icon: Icon(
+                Icons.notifications_none_outlined,
+                size: compactHeader ? AppScale.of(context).iconMd : 22,
+              ),
                 visualDensity: VisualDensity.compact,
               ),
               SizedBox(width: compactHeader ? 4 : 12),

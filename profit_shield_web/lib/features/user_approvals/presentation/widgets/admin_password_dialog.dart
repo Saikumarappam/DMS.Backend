@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../auth/providers/auth_provider.dart';
 
 /// Prompts the signed-in admin for their password before a sensitive action.
@@ -47,9 +48,10 @@ Future<bool> showAdminPasswordDialog(BuildContext context) async {
             }
 
             return AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               title: const Text('Confirm Password'),
               content: SizedBox(
-                width: 360,
+                width: formDialogWidthOf(context, max: 360),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,

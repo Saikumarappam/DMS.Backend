@@ -13,7 +13,9 @@ import '../../user_approvals/presentation/widgets/admin_password_dialog.dart';
 import '../providers/categories_provider.dart';
 
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  const CategoriesScreen({super.key, this.initialStatus});
+
+  final String? initialStatus;
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -27,8 +29,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     super.initState();
     _searchController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CategoriesProvider>().load();
+      context.read<CategoriesProvider>().load(status: widget.initialStatus ?? '');
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoriesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialStatus != widget.initialStatus) {
+      context.read<CategoriesProvider>().load(status: widget.initialStatus ?? '');
+    }
   }
 
   @override
@@ -208,7 +218,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           builder: (context, setState) => AlertDialog(
             title: const Text('Delete Document'),
             content: SizedBox(
-              width: 360,
+              width: formDialogWidthOf(ctx, max: 360),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,25 +288,35 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       context: context,
       builder: (ctx) {
         final size = MediaQuery.sizeOf(ctx);
-        final dialogWidth = size.width < 520 ? size.width - 48.0 : 460.0;
+        final dialogWidth = previewDialogWidthOf(ctx);
+        final inset = previewDialogInsetOf(ctx);
         return AlertDialog(
+          insetPadding: inset,
+          constraints: BoxConstraints(minWidth: 280, maxWidth: dialogWidth),
+          titlePadding: const EdgeInsets.fromLTRB(14, 8, 4, 0),
+          contentPadding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
           title: Row(
             children: [
               Expanded(
-                child: Text(doc.fileName, style: const TextStyle(fontWeight: FontWeight.w700)),
+                child: Text(doc.fileName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               ),
-              IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+              IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close, size: 20)),
             ],
           ),
           content: SizedBox(
             width: dialogWidth,
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: size.height * 0.65),
+              constraints: BoxConstraints(maxHeight: size.height * 0.42),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    DocumentPreviewImage(document: doc, large: true),
+                    DocumentPreviewImage(
+                      document: doc,
+                      width: double.infinity,
+                      height: 100,
+                      fit: BoxFit.contain,
+                    ),
                     const SizedBox(height: 16),
                     _MetaRow(label: 'Business', value: doc.businessName.isEmpty ? '—' : doc.businessName),
                     _MetaRow(label: 'Client', value: doc.uploaderName.isEmpty ? '—' : doc.uploaderName),
@@ -362,7 +382,11 @@ class _CategoryPreviewActions extends StatelessWidget {
 
     return SizedBox(
       width: double.maxFinite,
-      child: Row(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
         children: [
           ElevatedButton(
             style: compactAction.copyWith(
@@ -372,35 +396,30 @@ class _CategoryPreviewActions extends StatelessWidget {
             onPressed: onDelete,
             child: const Text('Delete'),
           ),
-          // const SizedBox(width: 8),
-          // ElevatedButton(
-          //   style: compactAction.copyWith(
-          //     backgroundColor: const WidgetStatePropertyAll(Color(0xFF16A34A)),
-          //     foregroundColor: const WidgetStatePropertyAll(Colors.white),
-          //   ),
-          //   onPressed: onApprove,
-          //   child: const Text('Approve'),
-          // ),
-          const Spacer(),
-          OutlinedButton.icon(
-            onPressed: onDownload,
-            icon: const Icon(Icons.download_outlined, size: 16),
-            label: const Text('Download'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              visualDensity: VisualDensity.compact,
-            ),
-            child: const Text('Close', style: TextStyle(color: AppColors.navy)),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onDownload,
+                icon: const Icon(Icons.download_outlined, size: 16),
+                label: const Text('Download'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text('Close', style: TextStyle(color: AppColors.navy)),
+              ),
+            ],
           ),
         ],
       ),
@@ -423,7 +442,7 @@ class _PageHeader extends StatelessWidget {
           Text(
             'Categories',
             style: TextStyle(
-              fontSize: compact ? 22 : 26,
+              fontSize: AppScale.of(context).pageTitle,
               fontWeight: FontWeight.w800,
               color: AppColors.navy,
               height: 1.2,
@@ -432,7 +451,7 @@ class _PageHeader extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Manage and view processed, approved and deleted documents',
-            style: TextStyle(fontSize: compact ? 13 : 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: AppScale.of(context).body, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -499,7 +518,7 @@ class _FiltersCard extends StatelessWidget {
         onChanged: onStatusChanged,
       ),
       _FilterDropdown(
-        label: 'Voucher Type',
+        label: 'Category Type',
         value: voucherTypeId,
         icon: Icons.description_outlined,
         items: voucherTypes,
@@ -618,9 +637,7 @@ class _FilterDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selected = items.any((item) => item.id == value)
-        ? value
-        : (items.isNotEmpty ? items.first.id : null);
+    final selected = _selectedId(items, value);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,6 +686,23 @@ class _FilterDropdown extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String? _selectedId(List<DocumentFilterChoice> items, String value) {
+    for (final item in items) {
+      if (item.id == value) return item.id;
+    }
+    final lower = value.toLowerCase();
+    for (final item in items) {
+      if (item.id.toLowerCase() == lower) return item.id;
+    }
+    const processed = {'process', 'processed', 'processes', 'approved'};
+    if (processed.contains(lower)) {
+      for (final item in items) {
+        if (processed.contains(item.id.toLowerCase())) return item.id;
+      }
+    }
+    return items.isNotEmpty ? items.first.id : null;
   }
 }
 
@@ -827,8 +861,12 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scale = AppScale.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: scale.cardPadding,
+        vertical: scale.cardPadding,
+      ),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(14),
@@ -837,26 +875,26 @@ class _SummaryCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: scale.isMobile ? 36 : 42,
+            height: scale.isMobile ? 36 : 42,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.8),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 22),
+            child: Icon(icon, color: iconColor, size: scale.iconMd),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: iconColor)),
+                Text(title, style: TextStyle(fontSize: scale.label, fontWeight: FontWeight.w600, color: iconColor)),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary, height: 1.1),
+                  style: TextStyle(fontSize: scale.isMobile ? 22 : 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary, height: 1.1),
                 ),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(subtitle, style: TextStyle(fontSize: scale.caption, color: AppColors.textSecondary)),
               ],
             ),
           ),

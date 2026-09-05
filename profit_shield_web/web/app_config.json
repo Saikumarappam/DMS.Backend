@@ -1,0 +1,4 @@
+{
+  "apiBaseUrl": "https://profitshield.profygen.com/api/v1",
+  "idleTimeoutHours": 3
+}

@@ -26,8 +26,9 @@ class DocumentsProvider extends ChangeNotifier {
 
   String appliedBusinessId = allId;
   String appliedCategoryId = allId;
+  String appliedStatus = defaultStatus;
   String searchQuery = '';
-  DocumentSort sort = DocumentSort.newest;
+  DocumentSort sort = DocumentSort.oldest;
   int currentPage = 1;
   int pendingCount = 0;
   bool isLoading = false;
@@ -38,7 +39,10 @@ class DocumentsProvider extends ChangeNotifier {
   bool _pendingCountRequested = false;
 
   bool get _isUnfilteredPending =>
-      appliedBusinessId.isEmpty && appliedCategoryId.isEmpty && searchQuery.trim().isEmpty;
+      appliedStatus == defaultStatus &&
+      appliedBusinessId.isEmpty &&
+      appliedCategoryId.isEmpty &&
+      searchQuery.trim().isEmpty;
 
   List<DocumentFilterChoice> get businessChoices => [
         DocumentFilterChoice.allBusinesses,
@@ -83,7 +87,8 @@ class DocumentsProvider extends ChangeNotifier {
     return items.sublist(start, (start + pageSize).clamp(0, items.length));
   }
 
-  Future<void> load() async {
+  Future<void> load({String? status}) async {
+    appliedStatus = status == null ? defaultStatus : _normalizeStatus(status);
     await loadFilters();
     await loadDocuments();
   }
@@ -118,7 +123,7 @@ class DocumentsProvider extends ChangeNotifier {
         clientId: int.tryParse(appliedBusinessId),
         categoryId: int.tryParse(appliedCategoryId),
         searchFileName: searchQuery,
-        status: defaultStatus,
+        status: appliedStatus,
       );
       currentPage = 1;
       if (_isUnfilteredPending) {
@@ -165,7 +170,7 @@ class DocumentsProvider extends ChangeNotifier {
     appliedBusinessId = allId;
     appliedCategoryId = allId;
     searchQuery = '';
-    sort = DocumentSort.newest;
+    sort = DocumentSort.oldest;
     currentPage = 1;
     notifyListeners();
     await loadDocuments();
@@ -233,6 +238,15 @@ class DocumentsProvider extends ChangeNotifier {
       isActing = false;
       notifyListeners();
     }
+  }
+
+  String _normalizeStatus(String status) {
+    final value = status.trim().toLowerCase();
+    if (value.isEmpty || value == 'all') return '';
+    if (value == 'process' || value == 'processed' || value == 'approved') {
+      return 'processes';
+    }
+    return value;
   }
 
   String _sanitizeChoice(String id, List<DocumentFilterChoice> choices) {

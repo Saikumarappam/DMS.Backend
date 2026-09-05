@@ -67,10 +67,13 @@ class _UserApprovalsScreenState extends State<UserApprovalsScreen> {
       onRefresh: () => provider.load(),
       child: RefreshIndicator(
         onRefresh: () => provider.load(),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final scale = AppScale.of(context);
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(scale.pagePadding),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (provider.actionMessage != null)
@@ -147,7 +150,9 @@ class _UserApprovalsScreenState extends State<UserApprovalsScreen> {
                 ),
               ),
             ],
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -316,26 +321,29 @@ class _StatusTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        children: [
-          _TabButton(
-            label: 'Pending (${counts.pending})',
-            selected: active == UserApprovalStatus.pending,
-            onTap: () => onChanged(UserApprovalStatus.pending),
-          ),
-          _TabButton(
-            label: 'Approved (${counts.approved})',
-            selected: active == UserApprovalStatus.approved,
-            onTap: () => onChanged(UserApprovalStatus.approved),
-          ),
-          _TabButton(
-            label: 'Rejected (${counts.rejected})',
-            selected: active == UserApprovalStatus.rejected,
-            onTap: () => onChanged(UserApprovalStatus.rejected),
-          ),
-        ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            _TabButton(
+              label: 'Pending (${counts.pending})',
+              selected: active == UserApprovalStatus.pending,
+              onTap: () => onChanged(UserApprovalStatus.pending),
+            ),
+            _TabButton(
+              label: 'Approved (${counts.approved})',
+              selected: active == UserApprovalStatus.approved,
+              onTap: () => onChanged(UserApprovalStatus.approved),
+            ),
+            _TabButton(
+              label: 'Rejected (${counts.rejected})',
+              selected: active == UserApprovalStatus.rejected,
+              onTap: () => onChanged(UserApprovalStatus.rejected),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -357,7 +365,10 @@ class _TabButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppScale.of(context).isMobile ? 12 : 20,
+          vertical: 14,
+        ),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
@@ -392,53 +403,39 @@ class _SearchFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: MediaQuery.of(context).size.width < 600
-              ? MediaQuery.of(context).size.width *
-                    0.8 // // Mobile
-              : MediaQuery.of(context).size.width < 1024
-              ? MediaQuery.of(context).size.width *
-                    0.6 // Tablet
-              : MediaQuery.of(context).size.width * 0.4, // Desktop
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            decoration: InputDecoration(
-              hintText: 'Search by name, business name or mobile...',
-              hintStyle: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-              prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: searchFieldWidthOf(constraints.maxWidth),
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              decoration: InputDecoration(
+                hintText: 'Search by name, business name or mobile...',
+                hintStyle: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
               ),
             ),
           ),
-        ),
-        // const SizedBox(width: 12),
-        // OutlinedButton.icon(
-        //   onPressed: onFilter,
-        //   icon: const Icon(Icons.filter_list, size: 18),
-        //   label: const Text('Filter'),
-        //   style: OutlinedButton.styleFrom(
-        //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        //     side: const BorderSide(color: AppColors.border),
-        //     foregroundColor: AppColors.textPrimary,
-        //   ),
-        // ),
-      ],
+        );
+      },
     );
   }
 }
@@ -496,10 +493,10 @@ class _UsersTable extends StatelessWidget {
                   minHeight: users.isEmpty ? 120 : 0,
                 ),
                 child: DataTable(
-                  headingRowHeight: 44,
-                  dataRowMinHeight: 56,
-                  dataRowMaxHeight: 72,
-                  columnSpacing: 20,
+                  headingRowHeight: AppScale.of(context).isMobile ? 40 : 44,
+                  dataRowMinHeight: AppScale.of(context).isMobile ? 48 : 56,
+                  dataRowMaxHeight: AppScale.of(context).isMobile ? 64 : 72,
+                  columnSpacing: AppScale.of(context).isMobile ? 12 : 20,
                   headingTextStyle: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -836,43 +833,45 @@ class _PaginationBar extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Row(
-        children: [
-          Text(
-            'Showing $start to $end of $totalItems requests',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
+      child: AdaptiveSplit(
+        start: Text(
+          'Showing $start to $end of $totalItems requests',
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        end: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: currentPage > 1
+                  ? () => onPageChanged(currentPage - 1)
+                  : null,
+              icon: const Icon(Icons.chevron_left),
             ),
-          ),
-          const Spacer(),
-          IconButton(
-            onPressed: currentPage > 1
-                ? () => onPageChanged(currentPage - 1)
-                : null,
-            icon: const Icon(Icons.chevron_left),
-          ),
-          for (var page = 1; page <= totalPages && page <= 5; page++)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: TextButton(
-                onPressed: () => onPageChanged(page),
-                style: TextButton.styleFrom(
-                  backgroundColor: page == currentPage
-                      ? AppColors.navy.withValues(alpha: 0.08)
-                      : null,
-                  minimumSize: const Size(36, 36),
+            for (var page = 1; page <= totalPages && page <= 5; page++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: TextButton(
+                  onPressed: () => onPageChanged(page),
+                  style: TextButton.styleFrom(
+                    backgroundColor: page == currentPage
+                        ? AppColors.navy.withValues(alpha: 0.08)
+                        : null,
+                    minimumSize: const Size(36, 36),
+                  ),
+                  child: Text('$page'),
                 ),
-                child: Text('$page'),
               ),
+            IconButton(
+              onPressed: currentPage < totalPages
+                  ? () => onPageChanged(currentPage + 1)
+                  : null,
+              icon: const Icon(Icons.chevron_right),
             ),
-          IconButton(
-            onPressed: currentPage < totalPages
-                ? () => onPageChanged(currentPage + 1)
-                : null,
-            icon: const Icon(Icons.chevron_right),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -914,6 +913,7 @@ class _UserDetailsDialogState extends State<_UserDetailsDialog> {
     final user = widget.user;
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       title: Row(
         children: [
           Expanded(
@@ -926,7 +926,7 @@ class _UserDetailsDialogState extends State<_UserDetailsDialog> {
         ],
       ),
       content: SizedBox(
-        width: 420,
+        width: formDialogWidthOf(context, max: 420),
         child: widget.editable
             ? Column(
                 mainAxisSize: MainAxisSize.min,

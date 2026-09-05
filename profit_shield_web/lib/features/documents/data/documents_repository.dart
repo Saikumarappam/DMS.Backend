@@ -43,16 +43,16 @@ class DocumentsRepository {
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
-    final resolvedStatus = status.trim().isEmpty ? 'pending' : status.trim();
+    final resolvedStatus = status.trim();
     final response = await _api.get(
       '/documents/history',
       query: {
-        if (clientId != null && clientId > 0) 'ClientId': '$clientId',
+        if (clientId != null) 'ClientId': '$clientId',
         if (categoryId != null && categoryId > 0) 'CategoryId': '$categoryId',
         if (fromDate != null) 'FromDate': _dateQuery(fromDate),
         if (toDate != null) 'ToDate': _dateQuery(toDate, endOfDay: true),
         if (searchFileName.trim().isNotEmpty) 'SearchFileName': searchFileName.trim(),
-        'Status': resolvedStatus,
+        if (resolvedStatus.isNotEmpty) 'Status': resolvedStatus,
       },
     );
 
