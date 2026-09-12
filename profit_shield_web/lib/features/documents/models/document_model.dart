@@ -6,13 +6,34 @@ import 'package:flutter/material.dart';
 class DocumentFilterChoice {
   const DocumentFilterChoice({required this.id, required this.label});
 
+  /// Sentinel id for an unselected filter dropdown placeholder.
+  static const unselectedId = '__unselected__';
+
   static const allBusinesses = DocumentFilterChoice(id: '', label: 'All Businesses');
-  static const selectBusiness = DocumentFilterChoice(id: '', label: 'Select Business Name');
   static const allCategories = DocumentFilterChoice(id: '', label: 'All Categories');
   static const all = DocumentFilterChoice(id: '', label: 'All');
 
+  static const selectBusiness = DocumentFilterChoice(
+    id: unselectedId,
+    label: 'Select Business Name',
+  );
+  static const selectCategory = DocumentFilterChoice(
+    id: unselectedId,
+    label: 'Select Category',
+  );
+  static const selectStatus = DocumentFilterChoice(
+    id: unselectedId,
+    label: 'Select Status',
+  );
+  static const selectCategoryType = DocumentFilterChoice(
+    id: unselectedId,
+    label: 'Select Category Type',
+  );
+
   final String id;
   final String label;
+
+  bool get isUnselected => id == unselectedId;
 }
 
 class DocumentBusiness {

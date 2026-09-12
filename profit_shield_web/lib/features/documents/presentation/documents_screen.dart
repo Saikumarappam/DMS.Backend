@@ -23,14 +23,33 @@ class DocumentsScreen extends StatefulWidget {
 
 class _DocumentsScreenState extends State<DocumentsScreen> {
   late final TextEditingController _searchController;
+  bool _initialDialogShown = false;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DocumentsProvider>().load(status: widget.initialStatus);
+      _loadInitialData();
     });
+  }
+
+  Future<void> _loadInitialData() async {
+    await context.read<DocumentsProvider>().load(status: widget.initialStatus);
+    if (!mounted || _initialDialogShown) return;
+    _initialDialogShown = true;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Documents'),
+        content: const Text(
+          'Select business name and category details to display the relevant documents.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+        ],
+      ),
+    );
   }
 
   @override
@@ -306,7 +325,7 @@ class _DocumentPreviewDialog extends StatelessWidget {
         title: _dialogTitle(context),
         content: SizedBox(
           width: dialogWidth,
-          height: size.height * 0.50,
+          height: size.height * 0.72,
           child: PdfDocumentViewBuilder(
             documentRef: PdfDocumentRefData(
               bytes,
@@ -347,10 +366,7 @@ class _DocumentPreviewDialog extends StatelessWidget {
       title: _dialogTitle(context),
       content: SizedBox(
         width: dialogWidth,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: size.height * 0.42),
-          child: _singlePagePreview(context, size),
-        ),
+        child: _singlePagePreview(context, size),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       actionsAlignment: MainAxisAlignment.start,
@@ -378,32 +394,12 @@ class _DocumentPreviewDialog extends StatelessWidget {
   }
 
   Widget _singlePagePreview(BuildContext context, Size size) {
-    final uploadedBy = [
-      if (document.uploaderPhone.isNotEmpty) document.uploaderPhone,
-      if (document.uploaderName.isNotEmpty) document.uploaderName,
-      if (document.businessName.isNotEmpty) document.businessName,
-    ].join('\n');
-
     return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DocumentPreviewImage(
-            document: document,
-            width: double.infinity,
-            height: 120,
-            fit: BoxFit.contain,
-          ),
-          const SizedBox(height: 16),
-          _PreviewMeta(label: 'Business', value: document.businessName.isEmpty ? '—' : document.businessName),
-          _PreviewMeta(
-            label: 'Uploaded On',
-            value: document.uploadedOn == null
-                ? '—'
-                : DateFormat('dd MMM yyyy, hh:mm a').format(document.uploadedOn!),
-          ),
-          _PreviewMeta(label: 'Uploaded By', value: uploadedBy.isEmpty ? '—' : uploadedBy),
-        ],
+      child: DocumentPreviewImage(
+        document: document,
+        width: double.infinity,
+        height: size.height * 0.70,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -1362,32 +1358,6 @@ class _PageIcon extends StatelessWidget {
       onPressed: enabled ? onTap : null,
       icon: Icon(icon, color: enabled ? AppColors.navy : AppColors.textMuted),
       visualDensity: VisualDensity.compact,
-    );
-  }
-}
-
-class _PreviewMeta extends StatelessWidget {
-  const _PreviewMeta({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-          ),
-        ],
-      ),
     );
   }
 }

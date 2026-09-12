@@ -18,6 +18,11 @@ class AppConfig {
     defaultValue: 3,
   );
 
+  static const int _defaultIdleTimeoutMinutes = int.fromEnvironment(
+    'IDLE_TIMEOUT_MINUTES',
+    defaultValue: 15,
+  );
+
   /// DMS API base URL (no trailing slash). Loaded from `app_config.json` on web
   /// so it can be changed in `build/web/app_config.json` without rebuilding.
   static String apiBaseUrl = _normalizeBaseUrl(_defaultApiBaseUrl);
@@ -25,7 +30,15 @@ class AppConfig {
   /// Web idle logout hours. Loaded from `app_config.json` at startup.
   static int idleTimeoutHours = _defaultIdleTimeoutHours;
 
-  static Duration get idleTimeout => Duration(hours: idleTimeoutHours);
+  /// When greater than zero, takes precedence over [idleTimeoutHours].
+  static int idleTimeoutMinutes = _defaultIdleTimeoutMinutes;
+
+  static Duration get idleTimeout {
+    if (idleTimeoutMinutes > 0) {
+      return Duration(minutes: idleTimeoutMinutes);
+    }
+    return Duration(hours: idleTimeoutHours);
+  }
 
   static Future<void> loadRuntimeConfig() async {
     if (!kIsWeb) return;
@@ -40,14 +53,23 @@ class AppConfig {
         apiBaseUrl = _normalizeBaseUrl(url);
       }
 
+      final minutes = decoded['idleTimeoutMinutes'];
+      if (minutes is num && minutes > 0) {
+        idleTimeoutMinutes = minutes.round();
+      }
+
       final hours = decoded['idleTimeoutHours'];
-      if (hours is num && hours > 0) {
+      if (hours is num && hours > 0 && idleTimeoutMinutes <= 0) {
         idleTimeoutHours = hours.round();
       }
 
       if (kDebugMode) {
         debugPrint('API base URL: $apiBaseUrl');
-        debugPrint('Idle timeout: $idleTimeoutHours hour(s)');
+        debugPrint(
+          idleTimeoutMinutes > 0
+              ? 'Idle timeout: $idleTimeoutMinutes minute(s)'
+              : 'Idle timeout: $idleTimeoutHours hour(s)',
+        );
       }
     } catch (_) {
       // Keep compile-time / default values.

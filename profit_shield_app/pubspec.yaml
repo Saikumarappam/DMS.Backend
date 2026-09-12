@@ -1,0 +1,52 @@
+name: dms_client
+description: ProfitShield - Secure document management for businesses.
+publish_to: 'none'
+version: 1.0.0+3
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.8.1
+  dio: ^5.8.0+1
+  flutter_dotenv: ^5.2.1
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.5.3
+  local_auth: ^2.3.0
+  intl: ^0.20.2
+  file_picker: ^10.3.10
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
+  open_filex: ^4.7.0
+  gal: ^2.3.2
+  media_store_plus: ^0.1.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/launcher_icon.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/launcher_icon.png
+  adaptive_icon_foreground_inset: 12
+  min_sdk_android: 21
+  remove_alpha_ios: true
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/app_icon.png
+    - assets/launcher_icon.png
+    - assets/logo_mark_light.png
+    - assets/brand_logo.png
+    - assets/splash_logo.png
+    - .env

@@ -23,14 +23,33 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
   late final TextEditingController _searchController;
+  bool _initialDialogShown = false;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CategoriesProvider>().load(status: widget.initialStatus ?? '');
+      _loadInitialData();
     });
+  }
+
+  Future<void> _loadInitialData() async {
+    await context.read<CategoriesProvider>().load(status: widget.initialStatus ?? '');
+    if (!mounted || _initialDialogShown) return;
+    _initialDialogShown = true;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Categories'),
+        content: const Text(
+          'Select business name and other details to display the relevant documents.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+        ],
+      ),
+    );
   }
 
   @override
@@ -143,6 +162,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(now.year + 1),
+      initialEntryMode: DatePickerEntryMode.input,
       initialDateRange: provider.pendingDateRange ??
           DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now),
     );
@@ -305,34 +325,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           content: SizedBox(
             width: dialogWidth,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: size.height * 0.42),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DocumentPreviewImage(
-                      document: doc,
-                      width: double.infinity,
-                      height: 100,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 16),
-                    _MetaRow(label: 'Business', value: doc.businessName.isEmpty ? '—' : doc.businessName),
-                    _MetaRow(label: 'Client', value: doc.uploaderName.isEmpty ? '—' : doc.uploaderName),
-                    if (doc.gstin.isNotEmpty) _MetaRow(label: 'GSTIN', value: doc.gstin),
-                    _MetaRow(label: 'Category', value: doc.categoryName),
-                    _MetaRow(label: 'Status', value: doc.status.isEmpty ? 'Pending' : doc.status),
-                    _MetaRow(
-                      label: 'Created',
-                      value: doc.uploadedOn == null
-                          ? '—'
-                          : DateFormat('dd MMM yyyy, hh:mm a').format(doc.uploadedOn!),
-                    ),
-                    _MetaRow(label: 'File Type', value: doc.fileTypeLabel),
-                  ],
-                ),
-              ),
+            child: DocumentPreviewImage(
+              document: doc,
+              width: double.infinity,
+              height: size.height * 0.70,
+              fit: BoxFit.contain,
             ),
           ),
           actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
@@ -1552,32 +1549,6 @@ class _PaginationBar extends StatelessWidget {
     if (current <= 3) return [1, 2, 3, -1, total];
     if (current >= total - 2) return [1, -1, total - 2, total - 1, total];
     return [1, -1, current, -1, total];
-  }
-}
-
-class _MetaRow extends StatelessWidget {
-  const _MetaRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-          ),
-        ],
-      ),
-    );
   }
 }
 

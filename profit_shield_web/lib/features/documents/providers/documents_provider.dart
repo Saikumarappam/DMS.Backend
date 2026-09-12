@@ -34,6 +34,7 @@ class DocumentsProvider extends ChangeNotifier {
   bool isLoading = false;
   bool isLoadingFilters = false;
   bool isActing = false;
+  bool filtersApplied = false;
   String? errorMessage;
   Timer? _searchDebounce;
   bool _pendingCountRequested = false;
@@ -45,12 +46,12 @@ class DocumentsProvider extends ChangeNotifier {
       searchQuery.trim().isEmpty;
 
   List<DocumentFilterChoice> get businessChoices => [
-        DocumentFilterChoice.allBusinesses,
+      DocumentFilterChoice.selectBusiness,
         ...businesses.map((item) => item.asChoice),
       ];
 
   List<DocumentFilterChoice> get categoryChoices => [
-        DocumentFilterChoice.allCategories,
+      DocumentFilterChoice.selectCategory,
         ...categories.map((item) => item.asChoice),
       ];
 
@@ -90,7 +91,6 @@ class DocumentsProvider extends ChangeNotifier {
   Future<void> load({String? status}) async {
     appliedStatus = status == null ? defaultStatus : _normalizeStatus(status);
     await loadFilters();
-    await loadDocuments();
   }
 
   Future<void> loadFilters() async {
@@ -113,6 +113,8 @@ class DocumentsProvider extends ChangeNotifier {
   }
 
   Future<void> loadDocuments({bool silent = false}) async {
+    if (!filtersApplied) return;
+
     if (!silent) {
       isLoading = true;
       errorMessage = null;
@@ -159,8 +161,13 @@ class DocumentsProvider extends ChangeNotifier {
   }
 
   Future<void> applyFilters() async {
+    if (pendingBusinessId == DocumentFilterChoice.unselectedId ||
+        pendingCategoryId == DocumentFilterChoice.unselectedId) {
+      return;
+    }
     appliedBusinessId = pendingBusinessId;
     appliedCategoryId = pendingCategoryId;
+    filtersApplied = true;
     await loadDocuments();
   }
 
@@ -169,6 +176,7 @@ class DocumentsProvider extends ChangeNotifier {
     pendingCategoryId = allId;
     appliedBusinessId = allId;
     appliedCategoryId = allId;
+    filtersApplied = false;
     searchQuery = '';
     sort = DocumentSort.oldest;
     currentPage = 1;
