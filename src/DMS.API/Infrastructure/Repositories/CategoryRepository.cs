@@ -11,7 +11,7 @@ public class CategoryRepository : SqlRepositoryBase, ICategoryRepository
     public CategoryRepository(IConfiguration configuration) : base(configuration) { }
 
     public Task<DataSet> GetAllDataSetAsync(bool includeInactive = false) =>
-        FetchSpDatasetAsync("sp_Category_GetAll", includeInactive);
+        FetchSpDatasetAsync("Category_GetAll", includeInactive);
 
     public async Task<List<FileCategory>> GetAllAsync(bool includeInactive = false)
     {
@@ -20,11 +20,11 @@ public class CategoryRepository : SqlRepositoryBase, ICategoryRepository
     }
 
     public Task<DataSet> AddDataSetAsync(string name, string? description, long createdBy) =>
-        FetchSpDatasetAsync("sp_Category_Add", name, DbValue(description), createdBy);
+        FetchSpDatasetAsync("Category_Add", name, DbValue(description), createdBy);
 
     public Task<DataSet> UpdateDataSetAsync(int id, string name, string? description, long modifiedBy) =>
-        FetchSpDatasetAsync("sp_Category_Update", id, name, DbValue(description), modifiedBy);
+        FetchSpDatasetAsync("Category_Update", id, name, DbValue(description), modifiedBy);
 
     public Task<DataSet> DeleteDataSetAsync(int id, long modifiedBy) =>
-        FetchSpDatasetAsync("sp_Category_Delete", id, modifiedBy);
+        FetchSpDatasetAsync("Category_Delete", id, modifiedBy);
 }

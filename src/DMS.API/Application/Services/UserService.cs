@@ -84,7 +84,7 @@ public class UserService
 
             if (result.status && request.Action == "Approve")
             {
-                var user = await _userRepo.GetByIdAsync(userId);
+                var user = await _userRepo.GetUserByTypeAsync("ID",userId.ToString());
                 if (user != null && ValidationRules.IsValidEmail(user.Email))
                 {
                     var username = ValidationRules.NormalizePanNumber(user.PANNumber);

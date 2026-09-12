@@ -14,7 +14,7 @@ public class DocumentRepository : SqlRepositoryBase, IDocumentRepository
     public Task<DataSet> UploadDataSetAsync(
         long clientId, int categoryId, string categoryName, string fileName, string originalName,
         string filePath, string extension, long fileSize, string source, long createdBy, string? fileBase64 = null) =>
-        FetchSpDatasetAsync("sp_Document_Upload",
+        FetchSpDatasetAsync("Document_Upload",
             clientId, categoryId, categoryName, fileName, originalName, filePath, extension, fileSize, source, createdBy, DbValue(fileBase64));
 
     public Task<DataSet> GetHistoryDataSetAsync(long? clientId, int? categoryId, DateTime? from, DateTime? to, string? search, string? status) =>
@@ -24,10 +24,10 @@ public class DocumentRepository : SqlRepositoryBase, IDocumentRepository
        FetchSpDatasetAsync("Document_GetFilterOptions", DbValue(status));
 
     public Task<DataSet> GetByIdDataSetAsync(long fileId) =>
-        FetchSpDatasetAsync("sp_Document_GetById", fileId);
+        FetchSpDatasetAsync("Document_GetById", fileId);
 
     public Task<DataSet> GetDashboardStatsDataSetAsync(long clientId) =>
-        FetchSpDatasetAsync("sp_Document_GetDashboardStats", clientId);
+        FetchSpDatasetAsync("Document_GetDashboardStats", clientId);
 
     public async Task<FileDetail?> GetByIdAsync(long fileId)
     {

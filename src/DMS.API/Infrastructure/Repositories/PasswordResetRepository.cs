@@ -12,7 +12,7 @@ public class PasswordResetRepository : SqlRepositoryBase, IPasswordResetReposito
 
     public async Task SaveOtpAsync(long userId, string otpHash, DateTime expiresAt)
     {
-        await SqlHelper.ExecuteNonQueryAsync(_constr, "sp_PasswordOtp_Save", userId, otpHash, expiresAt);
+        await SqlHelper.ExecuteNonQueryAsync(_constr, "PasswordOtp_Save", userId, otpHash, expiresAt);
     }
 
     public async Task<PasswordOtpRecord?> GetActiveOtpAsync(long userId)
@@ -35,14 +35,14 @@ public class PasswordResetRepository : SqlRepositoryBase, IPasswordResetReposito
     }
 
     public Task IncrementOtpAttemptAsync(long otpId) =>
-        SqlHelper.ExecuteNonQueryAsync(_constr, "sp_PasswordOtp_IncrementAttempt", otpId);
+        SqlHelper.ExecuteNonQueryAsync(_constr, "PasswordOtp_IncrementAttempt", otpId);
 
     public Task SetOtpVerifiedAsync(long otpId, string resetSessionToken, DateTime sessionExpiresAt) =>
-        SqlHelper.ExecuteNonQueryAsync(_constr, "sp_PasswordOtp_SetVerified", otpId, resetSessionToken, sessionExpiresAt);
+        SqlHelper.ExecuteNonQueryAsync(_constr, "PasswordOtp_SetVerified", otpId, resetSessionToken, sessionExpiresAt);
 
     public async Task<PasswordOtpSessionRecord?> GetVerifiedSessionAsync(string email, string resetSessionToken)
     {
-        var ds = await SqlHelper.ExecuteDatasetAsync(_constr, "sp_PasswordOtp_GetBySession", email, resetSessionToken);
+        var ds = await SqlHelper.ExecuteDatasetAsync(_constr, "PasswordOtp_GetBySession", email, resetSessionToken);
         var row = SpDataSetReader.GetFirstDataRow(ds);
         if (row == null)
             return null;
@@ -56,5 +56,5 @@ public class PasswordResetRepository : SqlRepositoryBase, IPasswordResetReposito
     }
 
     public Task MarkOtpUsedAsync(long otpId) =>
-        SqlHelper.ExecuteNonQueryAsync(_constr, "sp_PasswordOtp_MarkUsed", otpId);
+        SqlHelper.ExecuteNonQueryAsync(_constr, "PasswordOtp_MarkUsed", otpId);
 }

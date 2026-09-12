@@ -170,7 +170,7 @@ public class AuthService
                 return resp;
             }
 
-            var user = await _userRepo.GetByIdAsync(tokenData.Value.UserId);
+            var user = await _userRepo.GetUserByTypeAsync("ID", tokenData.Value.UserId.ToString());
             if (user == null)
             {
                 var resp = ResponseHelper.NotFoundResponse("User not found.");
@@ -202,7 +202,7 @@ public class AuthService
                 return resp;
             }
 
-            var user = await _userRepo.GetByIdAsync(userId);
+            var user = await _userRepo.GetUserByTypeAsync("ID",userId.ToString());
             if (!ValidatePassword(user, request.CurrentPassword).isValid)
             {
                 var resp = ResponseHelper.InvalidCredentialsResponse("Current password is incorrect.");
@@ -235,7 +235,7 @@ public class AuthService
                 return resp;
             }
 
-            var user = await _userRepo.GetByEmailAsync(request.Email);
+            var user = await _userRepo.GetUserByTypeAsync("E", request.Email);
             if (user != null)
             {
                 if (user.UserStatus is not ("Approved" or "Active"))
@@ -284,7 +284,7 @@ public class AuthService
                 return resp;
             }
 
-            var user = await _userRepo.GetByEmailAsync(request.Email);
+            var user = await _userRepo.GetUserByTypeAsync("E", request.Email);
             if (user == null)
             {
                 var resp = ResponseHelper.TokenErrorResponse("Invalid OTP.");
@@ -393,7 +393,7 @@ public class AuthService
 
             await _passwordResetRepo.MarkOtpUsedAsync(session.OtpId);
 
-            var user = await _userRepo.GetByIdAsync(session.UserId);
+            var user = await _userRepo.GetUserByTypeAsync("ID",session.UserId.ToString());
             if (user != null)
             {
                 await _notificationService.SendPasswordResetConfirmationAsync(
@@ -415,18 +415,18 @@ public class AuthService
 
     private async Task<(User? User, string? LookupMessage)> ResolveUserForLoginAsync(string username)
     {
-        var (user, notFoundMessage) = await _userRepo.GetByUsernameOrMessageAsync(username);
+        var user = await _userRepo.GetUserByTypeAsync("U", username);
         if (user != null)
             return (user, null);
 
         if (ValidationRules.IsValidPanNumber(username))
         {
-            var panUser = await _userRepo.GetByPanAsync(username);
+            var panUser = await _userRepo.GetUserByTypeAsync("P",username);
             if (panUser != null)
                 return (panUser, null);
         }
 
-        return (null, notFoundMessage);
+        return (null, "User not found.");
     }
 
     private (bool isValid, bool shouldRehash) ValidatePassword(User? user, string password)

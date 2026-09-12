@@ -7,10 +7,7 @@ namespace DMS.Application.Interfaces;
 public interface IUserRepository
 {
     Task<DataSet> GetAllDataSetAsync(string? status, string? search);
-    Task<DataSet> GetByIdDataSetAsync(long userId);
-    Task<DataSet> GetByUsernameDataSetAsync(string username);
-    Task<DataSet> GetByPanDataSetAsync(string panNumber);
-    Task<DataSet> GetByEmailDataSetAsync(string email);
+
     Task<DataSet> LoginDataSetAsync(string username, bool isPasswordValid, int maxAttempts = 5, int lockoutMinutes = 30);
 
     Task<DataSet> RegisterDataSetAsync(
@@ -28,12 +25,7 @@ public interface IUserRepository
         string? businessName, string? contactPerson, string? gst, bool profileCompleted, long modifiedBy);
 
     Task<DataSet> ChangePasswordDataSetAsync(long userId, string newHash, string originalPassword, long modifiedBy);
-
-    Task<User?> GetByUsernameAsync(string username);
-    Task<(User? User, string? NotFoundMessage)> GetByUsernameOrMessageAsync(string username);
-    Task<User?> GetByPanAsync(string panNumber);
-    Task<User?> GetByIdAsync(long userId);
-    Task<User?> GetByEmailAsync(string email);
+    Task<User?> GetUserByTypeAsync(string type, string value);
 }
 
 public interface ICategoryRepository
